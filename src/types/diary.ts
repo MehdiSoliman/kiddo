@@ -1,9 +1,17 @@
-export type TimeSlotId = 
+// Checkpoint markers on the timeline (visual anchors)
+export type CheckpointId = 
   | 'start' 
   | 'morning-break' 
   | 'lunch' 
   | 'afternoon-break' 
   | 'home';
+
+// Periods between checkpoints (where activities happen)
+export type PeriodId = 
+  | 'morning' 
+  | 'late-morning' 
+  | 'afternoon' 
+  | 'late-afternoon';
 
 export interface Activity {
   id: string;
@@ -18,31 +26,44 @@ export interface CustomActivity {
   text: string;
 }
 
-export interface TimeSlotEntry {
+export interface PeriodEntry {
   activities: string[]; // Activity IDs
   customActivities: CustomActivity[];
-  lunchMenu?: string; // Only for lunch slot
 }
 
 export interface DayEntry {
   date: string; // ISO date string YYYY-MM-DD
-  slots: Record<TimeSlotId, TimeSlotEntry>;
+  periods: Record<PeriodId, PeriodEntry>;
+  lunchMenu?: string;
 }
 
-export interface TimeSlotConfig {
-  id: TimeSlotId;
+export interface CheckpointConfig {
+  id: CheckpointId;
   emoji: string;
-  label: string;
   labelFr: string;
+}
+
+export interface PeriodConfig {
+  id: PeriodId;
+  labelFr: string;
+  startCheckpoint: CheckpointId;
+  endCheckpoint: CheckpointId;
   color: 'lavender' | 'mint' | 'peach' | 'sky' | 'rose';
 }
 
-export const TIME_SLOTS: TimeSlotConfig[] = [
-  { id: 'start', emoji: '🌅', label: 'Start of school', labelFr: 'Début d\'école', color: 'lavender' },
-  { id: 'morning-break', emoji: '☕', label: 'Morning break', labelFr: 'Récréation du matin', color: 'mint' },
-  { id: 'lunch', emoji: '🍽️', label: 'Lunch', labelFr: 'Déjeuner', color: 'peach' },
-  { id: 'afternoon-break', emoji: '🎈', label: 'Afternoon break', labelFr: 'Récréation de l\'après-midi', color: 'sky' },
-  { id: 'home', emoji: '🏠', label: 'Back home', labelFr: 'Retour à la maison', color: 'rose' },
+export const CHECKPOINTS: CheckpointConfig[] = [
+  { id: 'start', emoji: '🌅', labelFr: 'Début' },
+  { id: 'morning-break', emoji: '☕', labelFr: 'Récré' },
+  { id: 'lunch', emoji: '🍽️', labelFr: 'Déjeuner' },
+  { id: 'afternoon-break', emoji: '🎈', labelFr: 'Récré' },
+  { id: 'home', emoji: '🏠', labelFr: 'Retour' },
+];
+
+export const PERIODS: PeriodConfig[] = [
+  { id: 'morning', labelFr: 'Matin', startCheckpoint: 'start', endCheckpoint: 'morning-break', color: 'lavender' },
+  { id: 'late-morning', labelFr: 'Fin de matin', startCheckpoint: 'morning-break', endCheckpoint: 'lunch', color: 'mint' },
+  { id: 'afternoon', labelFr: 'Après-midi', startCheckpoint: 'lunch', endCheckpoint: 'afternoon-break', color: 'sky' },
+  { id: 'late-afternoon', labelFr: 'Fin d\'après-midi', startCheckpoint: 'afternoon-break', endCheckpoint: 'home', color: 'rose' },
 ];
 
 export const ACTIVITIES: Activity[] = [
@@ -64,18 +85,18 @@ export const ACTIVITIES: Activity[] = [
   { id: 'rest', emoji: '😴', label: 'Rest', labelFr: 'Repos' },
 ];
 
-export const createEmptySlotEntry = (): TimeSlotEntry => ({
+export const createEmptyPeriodEntry = (): PeriodEntry => ({
   activities: [],
   customActivities: [],
 });
 
 export const createEmptyDayEntry = (date: string): DayEntry => ({
   date,
-  slots: {
-    'start': createEmptySlotEntry(),
-    'morning-break': createEmptySlotEntry(),
-    'lunch': createEmptySlotEntry(),
-    'afternoon-break': createEmptySlotEntry(),
-    'home': createEmptySlotEntry(),
+  periods: {
+    'morning': createEmptyPeriodEntry(),
+    'late-morning': createEmptyPeriodEntry(),
+    'afternoon': createEmptyPeriodEntry(),
+    'late-afternoon': createEmptyPeriodEntry(),
   },
+  lunchMenu: '',
 });

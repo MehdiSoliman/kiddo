@@ -2,20 +2,18 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { TimeSlotConfig, TimeSlotEntry, ACTIVITIES } from '@/types/diary';
+import { PeriodConfig, PeriodEntry, ACTIVITIES } from '@/types/diary';
 import { cn } from '@/lib/utils';
 import { X, Plus, Check } from 'lucide-react';
 
 interface ActivityPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  config: TimeSlotConfig;
-  entry: TimeSlotEntry;
+  config: PeriodConfig;
+  entry: PeriodEntry;
   onToggleActivity: (activityId: string) => void;
   onAddCustomActivity: (emoji: string, text: string) => void;
   onRemoveCustomActivity: (customActivityId: string) => void;
-  onUpdateLunchMenu?: (menu: string) => void;
 }
 
 const CUSTOM_EMOJIS = ['⭐', '❤️', '🌟', '✨', '🎁', '🎯', '🌈', '🦋', '🐶', '🐱', '🎪', '🎭'];
@@ -28,7 +26,6 @@ export const ActivityPicker = ({
   onToggleActivity,
   onAddCustomActivity,
   onRemoveCustomActivity,
-  onUpdateLunchMenu,
 }: ActivityPickerProps) => {
   const [customText, setCustomText] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('⭐');
@@ -42,35 +39,16 @@ export const ActivityPicker = ({
     }
   };
 
-  const isLunch = config.id === 'lunch';
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <span className="text-3xl">{config.emoji}</span>
-            {config.labelFr}
+            📚 {config.labelFr}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Lunch menu input */}
-          {isLunch && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                🍽️ Menu du déjeuner
-              </label>
-              <Textarea
-                placeholder="Qu'est-ce qu'elle a mangé aujourd'hui?"
-                value={entry.lunchMenu || ''}
-                onChange={(e) => onUpdateLunchMenu?.(e.target.value)}
-                className="rounded-xl resize-none"
-                rows={2}
-              />
-            </div>
-          )}
-
           {/* Activity grid */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">
@@ -84,7 +62,7 @@ export const ActivityPicker = ({
                     key={activity.id}
                     onClick={() => onToggleActivity(activity.id)}
                     className={cn(
-                      'flex flex-col items-center gap-1 p-3 rounded-xl transition-all',
+                      'flex flex-col items-center gap-1 p-3 rounded-xl transition-all relative',
                       'hover:scale-105 active:scale-95',
                       isSelected 
                         ? 'bg-primary/20 ring-2 ring-primary shadow-sm' 

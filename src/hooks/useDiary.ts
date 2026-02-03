@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { 
   DayEntry, 
-  TimeSlotId, 
-  TimeSlotEntry, 
+  PeriodId, 
+  PeriodEntry, 
   CustomActivity,
   createEmptyDayEntry 
 } from '@/types/diary';
@@ -40,17 +40,17 @@ export const useDiary = () => {
   // Get current day's entry (or create empty one)
   const currentEntry: DayEntry = entries[dateKey] || createEmptyDayEntry(dateKey);
 
-  // Update a specific time slot
-  const updateSlot = useCallback((slotId: TimeSlotId, slotEntry: TimeSlotEntry) => {
+  // Update a specific period
+  const updatePeriod = useCallback((periodId: PeriodId, periodEntry: PeriodEntry) => {
     setEntries(prev => {
       const existingEntry = prev[dateKey] || createEmptyDayEntry(dateKey);
       const newEntries = {
         ...prev,
         [dateKey]: {
           ...existingEntry,
-          slots: {
-            ...existingEntry.slots,
-            [slotId]: slotEntry,
+          periods: {
+            ...existingEntry.periods,
+            [periodId]: periodEntry,
           },
         },
       };
@@ -59,45 +59,55 @@ export const useDiary = () => {
     });
   }, [dateKey]);
 
-  // Toggle an activity for a slot
-  const toggleActivity = useCallback((slotId: TimeSlotId, activityId: string) => {
-    const slot = currentEntry.slots[slotId];
-    const newActivities = slot.activities.includes(activityId)
-      ? slot.activities.filter(id => id !== activityId)
-      : [...slot.activities, activityId];
+  // Toggle an activity for a period
+  const toggleActivity = useCallback((periodId: PeriodId, activityId: string) => {
+    const period = currentEntry.periods[periodId];
+    const newActivities = period.activities.includes(activityId)
+      ? period.activities.filter(id => id !== activityId)
+      : [...period.activities, activityId];
     
-    updateSlot(slotId, { ...slot, activities: newActivities });
-  }, [currentEntry, updateSlot]);
+    updatePeriod(periodId, { ...period, activities: newActivities });
+  }, [currentEntry, updatePeriod]);
 
   // Add a custom activity
-  const addCustomActivity = useCallback((slotId: TimeSlotId, emoji: string, text: string) => {
-    const slot = currentEntry.slots[slotId];
+  const addCustomActivity = useCallback((periodId: PeriodId, emoji: string, text: string) => {
+    const period = currentEntry.periods[periodId];
     const newCustomActivity: CustomActivity = {
       id: `custom-${Date.now()}`,
       emoji,
       text,
     };
     
-    updateSlot(slotId, {
-      ...slot,
-      customActivities: [...slot.customActivities, newCustomActivity],
+    updatePeriod(periodId, {
+      ...period,
+      customActivities: [...period.customActivities, newCustomActivity],
     });
-  }, [currentEntry, updateSlot]);
+  }, [currentEntry, updatePeriod]);
 
   // Remove a custom activity
-  const removeCustomActivity = useCallback((slotId: TimeSlotId, customActivityId: string) => {
-    const slot = currentEntry.slots[slotId];
-    updateSlot(slotId, {
-      ...slot,
-      customActivities: slot.customActivities.filter(ca => ca.id !== customActivityId),
+  const removeCustomActivity = useCallback((periodId: PeriodId, customActivityId: string) => {
+    const period = currentEntry.periods[periodId];
+    updatePeriod(periodId, {
+      ...period,
+      customActivities: period.customActivities.filter(ca => ca.id !== customActivityId),
     });
-  }, [currentEntry, updateSlot]);
+  }, [currentEntry, updatePeriod]);
 
-  // Update lunch menu
+  // Update lunch menu (separate from periods)
   const updateLunchMenu = useCallback((menu: string) => {
-    const slot = currentEntry.slots['lunch'];
-    updateSlot('lunch', { ...slot, lunchMenu: menu });
-  }, [currentEntry, updateSlot]);
+    setEntries(prev => {
+      const existingEntry = prev[dateKey] || createEmptyDayEntry(dateKey);
+      const newEntries = {
+        ...prev,
+        [dateKey]: {
+          ...existingEntry,
+          lunchMenu: menu,
+        },
+      };
+      saveAllEntries(newEntries);
+      return newEntries;
+    });
+  }, [dateKey]);
 
   // Check if a date has any entries
   const hasEntries = useCallback((date: Date): boolean => {
@@ -105,11 +115,14 @@ export const useDiary = () => {
     const entry = entries[key];
     if (!entry) return false;
     
-    return Object.values(entry.slots).some(slot => 
-      slot.activities.length > 0 || 
-      slot.customActivities.length > 0 || 
-      (slot.lunchMenu && slot.lunchMenu.trim() !== '')
+    const hasPeriodsContent = Object.values(entry.periods).some(period => 
+      period.activities.length > 0 || 
+      period.customActivities.length > 0
     );
+    
+    const hasLunch = entry.lunchMenu && entry.lunchMenu.trim() !== '';
+    
+    return hasPeriodsContent || hasLunch;
   }, [entries]);
 
   // Get entry for a specific date

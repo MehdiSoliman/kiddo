@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DayEntry, TIME_SLOTS, ACTIVITIES } from '@/types/diary';
+import { DayEntry, PERIODS, ACTIVITIES } from '@/types/diary';
 import { cn } from '@/lib/utils';
 
 interface DaySummaryProps {
@@ -20,11 +20,12 @@ export const DaySummary = ({ entry, date }: DaySummaryProps) => {
   const formattedDate = format(date, "EEEE d MMMM yyyy", { locale: fr });
 
   // Check if there's any content
-  const hasAnyContent = Object.values(entry.slots).some(slot => 
-    slot.activities.length > 0 || 
-    slot.customActivities.length > 0 || 
-    (slot.lunchMenu && slot.lunchMenu.trim() !== '')
+  const hasPeriodsContent = Object.values(entry.periods).some(period => 
+    period.activities.length > 0 || 
+    period.customActivities.length > 0
   );
+  const hasLunch = entry.lunchMenu && entry.lunchMenu.trim() !== '';
+  const hasAnyContent = hasPeriodsContent || hasLunch;
 
   if (!hasAnyContent) {
     return (
@@ -44,29 +45,27 @@ export const DaySummary = ({ entry, date }: DaySummaryProps) => {
       </h2>
 
       <div className="grid gap-3">
-        {TIME_SLOTS.map((slot) => {
-          const slotEntry = entry.slots[slot.id];
-          const activities = slotEntry.activities
+        {PERIODS.map((period) => {
+          const periodEntry = entry.periods[period.id];
+          const activities = periodEntry.activities
             .map(id => ACTIVITIES.find(a => a.id === id))
             .filter(Boolean);
           
-          const hasContent = activities.length > 0 || 
-            slotEntry.customActivities.length > 0 ||
-            (slot.id === 'lunch' && slotEntry.lunchMenu);
+          const hasContent = activities.length > 0 || periodEntry.customActivities.length > 0;
 
           if (!hasContent) return null;
 
           return (
             <div
-              key={slot.id}
+              key={period.id}
               className={cn(
                 'p-4 rounded-xl',
-                colorClasses[slot.color]
+                colorClasses[period.color]
               )}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">{slot.emoji}</span>
-                <h3 className="font-medium">{slot.labelFr}</h3>
+                <span className="text-xl">📚</span>
+                <h3 className="font-medium">{period.labelFr}</h3>
               </div>
               
               <div className="flex flex-wrap gap-2">
@@ -80,7 +79,7 @@ export const DaySummary = ({ entry, date }: DaySummaryProps) => {
                   </span>
                 ))}
                 
-                {slotEntry.customActivities.map((ca) => (
+                {periodEntry.customActivities.map((ca) => (
                   <span
                     key={ca.id}
                     className="inline-flex items-center gap-1 bg-background/60 rounded-full px-3 py-1 text-sm"
@@ -90,15 +89,22 @@ export const DaySummary = ({ entry, date }: DaySummaryProps) => {
                   </span>
                 ))}
               </div>
-
-              {slot.id === 'lunch' && slotEntry.lunchMenu && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  <span className="font-medium">Menu:</span> {slotEntry.lunchMenu}
-                </p>
-              )}
             </div>
           );
         })}
+
+        {/* Lunch menu section */}
+        {hasLunch && (
+          <div className="p-4 rounded-xl bg-peach/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🍽️</span>
+              <h3 className="font-medium">Déjeuner</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {entry.lunchMenu}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
