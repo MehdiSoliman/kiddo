@@ -3,21 +3,19 @@ import { useDiary } from '@/hooks/useDiary';
 import { Header } from '@/components/diary/Header';
 import { Timeline } from '@/components/diary/Timeline';
 import { CalendarView } from '@/components/diary/CalendarView';
+import { WeekView } from '@/components/diary/WeekView';
 import { DaySummary } from '@/components/diary/DaySummary';
 import { format } from 'date-fns';
 
 const Index = () => {
-  const [view, setView] = useState<'timeline' | 'calendar'>('timeline');
-  const { selectedDate, setSelectedDate, currentEntry, getEntry } = useDiary();
-
-  const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const [view, setView] = useState<'timeline' | 'week' | 'calendar'>('timeline');
+  const { selectedDate, setSelectedDate, currentEntry } = useDiary();
 
   const handleSelectDate = (date: Date) => {
     setSelectedDate(date);
-    // If selecting today, show timeline; otherwise show calendar with summary
   };
 
-  const handleViewChange = (newView: 'timeline' | 'calendar') => {
+  const handleViewChange = (newView: 'timeline' | 'week' | 'calendar') => {
     if (newView === 'timeline') {
       setSelectedDate(new Date());
     }
@@ -35,6 +33,8 @@ const Index = () => {
 
         {view === 'timeline' ? (
           <Timeline />
+        ) : view === 'week' ? (
+          <WeekView />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CalendarView onSelectDate={handleSelectDate} />
