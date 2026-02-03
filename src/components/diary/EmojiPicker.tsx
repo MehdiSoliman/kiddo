@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EMOJI_CATEGORIES, searchEmojis, EmojiItem } from '@/lib/emojiData';
+import { EMOJI_CATEGORIES, searchEmojis } from '@/lib/emojiData';
 
 interface EmojiPickerProps {
   selectedEmoji: string;
@@ -21,7 +20,7 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
   const showSearch = searchQuery.trim().length > 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Search input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -29,15 +28,15 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
           placeholder="Rechercher un emoji..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 rounded-xl"
+          className="pl-9 rounded-xl h-9 text-sm"
         />
       </div>
 
       {showSearch ? (
         // Search results
-        <ScrollArea className="h-[120px]">
+        <div className="h-[80px] overflow-y-auto">
           {searchResults.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {searchResults.map((item) => (
                 <button
                   key={item.emoji}
@@ -46,7 +45,7 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
                     setSearchQuery('');
                   }}
                   className={cn(
-                    'text-2xl p-2 rounded-lg transition-all',
+                    'text-xl p-1.5 rounded-lg transition-all',
                     selectedEmoji === item.emoji
                       ? 'bg-primary/20 ring-2 ring-primary'
                       : 'hover:bg-muted'
@@ -57,22 +56,22 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Aucun emoji trouvé pour "{searchQuery}"
+            <p className="text-sm text-muted-foreground text-center py-2">
+              Aucun emoji trouvé
             </p>
           )}
-        </ScrollArea>
+        </div>
       ) : (
         <>
           {/* Category tabs */}
-          <ScrollArea className="w-full">
+          <div className="overflow-x-auto">
             <div className="flex gap-1 pb-1">
               {EMOJI_CATEGORIES.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => setActiveCategory(category.id)}
                   className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all flex-shrink-0',
+                    'px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-all flex-shrink-0',
                     activeCategory === category.id
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted hover:bg-muted/80 text-muted-foreground'
@@ -82,17 +81,17 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Emoji grid for active category */}
-          <ScrollArea className="h-[120px]">
-            <div className="flex flex-wrap gap-1.5">
+          <div className="h-[80px] overflow-y-auto">
+            <div className="flex flex-wrap gap-1">
               {EMOJI_CATEGORIES.find(c => c.id === activeCategory)?.emojis.map((item) => (
                 <button
                   key={item.emoji}
                   onClick={() => onSelect(item.emoji)}
                   className={cn(
-                    'text-2xl p-2 rounded-lg transition-all',
+                    'text-xl p-1.5 rounded-lg transition-all',
                     selectedEmoji === item.emoji
                       ? 'bg-primary/20 ring-2 ring-primary'
                       : 'hover:bg-muted'
@@ -102,7 +101,7 @@ export const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </>
       )}
     </div>
