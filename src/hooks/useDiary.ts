@@ -84,6 +84,24 @@ export const useDiary = () => {
     });
   }, [currentEntry, updatePeriod]);
 
+  // Update an existing custom activity
+  const updateCustomActivity = useCallback((
+    periodId: PeriodId, 
+    customActivityId: string, 
+    emoji: string, 
+    text: string
+  ) => {
+    const period = currentEntry.periods[periodId];
+    updatePeriod(periodId, {
+      ...period,
+      customActivities: period.customActivities.map(ca =>
+        ca.id === customActivityId 
+          ? { ...ca, emoji, text } 
+          : ca
+      ),
+    });
+  }, [currentEntry, updatePeriod]);
+
   // Remove a custom activity
   const removeCustomActivity = useCallback((periodId: PeriodId, customActivityId: string) => {
     const period = currentEntry.periods[periodId];
@@ -137,6 +155,7 @@ export const useDiary = () => {
     currentEntry,
     toggleActivity,
     addCustomActivity,
+    updateCustomActivity,
     removeCustomActivity,
     updateLunchMenu,
     hasEntries,

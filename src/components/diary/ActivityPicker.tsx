@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PeriodConfig, PeriodEntry, ACTIVITIES } from '@/types/diary';
+import { PeriodConfig, PeriodEntry, ACTIVITIES, CustomActivity } from '@/types/diary';
 import { cn } from '@/lib/utils';
-import { X, Plus, Check } from 'lucide-react';
+import { X, Plus, Check, Pencil } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ActivityPickerProps {
   open: boolean;
@@ -13,10 +14,154 @@ interface ActivityPickerProps {
   entry: PeriodEntry;
   onToggleActivity: (activityId: string) => void;
   onAddCustomActivity: (emoji: string, text: string) => void;
+  onUpdateCustomActivity: (customActivityId: string, emoji: string, text: string) => void;
   onRemoveCustomActivity: (customActivityId: string) => void;
 }
 
-const CUSTOM_EMOJIS = ['⭐', '❤️', '🌟', '✨', '🎁', '🎯', '🌈', '🦋', '🐶', '🐱', '🎪', '🎭'];
+const EMOJI_CATEGORIES = [
+  { 
+    id: 'school', 
+    label: 'École', 
+    emojis: ['📝', '📖', '📚', '✏️', '🖍️', '📐', '🎒', '🏫'] 
+  },
+  { 
+    id: 'sports', 
+    label: 'Sports', 
+    emojis: ['⚽', '🏀', '🎾', '🏃', '🤸', '🚴', '🏊', '⛹️'] 
+  },
+  { 
+    id: 'arts', 
+    label: 'Arts', 
+    emojis: ['🎨', '🎭', '🎪', '🎵', '🎤', '🎹', '🎸', '🎬'] 
+  },
+  { 
+    id: 'nature', 
+    label: 'Nature', 
+    emojis: ['🌳', '🌸', '🌻', '🐦', '🦋', '🐶', '🐱', '🐰'] 
+  },
+  { 
+    id: 'food', 
+    label: 'Nourriture', 
+    emojis: ['🍎', '🍕', '🍦', '🧁', '🍪', '🥤', '🍩', '🍫'] 
+  },
+  { 
+    id: 'fun', 
+    label: 'Divertissement', 
+    emojis: ['⭐', '❤️', '🌈', '✨', '🎁', '🎯', '🎮', '🧩'] 
+  },
+  { 
+    id: 'people', 
+    label: 'Personnes', 
+    emojis: ['👋', '🤝', '💬', '👨‍👩‍👧', '👩‍🏫', '👫', '🙋', '💪'] 
+  },
+];
+
+interface EmojiPickerProps {
+  selectedEmoji: string;
+  onSelect: (emoji: string) => void;
+}
+
+const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
+  const [activeCategory, setActiveCategory] = useState(EMOJI_CATEGORIES[0].id);
+
+  return (
+    <div className="space-y-3">
+      {/* Category tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {EMOJI_CATEGORIES.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setActiveCategory(category.id)}
+            className={cn(
+              'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all',
+              activeCategory === category.id
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+            )}
+          >
+            {category.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Emoji grid for active category */}
+      <div className="flex flex-wrap gap-2">
+        {EMOJI_CATEGORIES.find(c => c.id === activeCategory)?.emojis.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => onSelect(emoji)}
+            className={cn(
+              'text-2xl p-2 rounded-lg transition-all',
+              selectedEmoji === emoji 
+                ? 'bg-primary/20 ring-2 ring-primary' 
+                : 'hover:bg-muted'
+            )}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+interface CustomActivityFormProps {
+  initialEmoji?: string;
+  initialText?: string;
+  onSave: (emoji: string, text: string) => void;
+  onCancel: () => void;
+  isEditing?: boolean;
+}
+
+const CustomActivityForm = ({ 
+  initialEmoji = '⭐', 
+  initialText = '', 
+  onSave, 
+  onCancel,
+  isEditing = false 
+}: CustomActivityFormProps) => {
+  const [emoji, setEmoji] = useState(initialEmoji);
+  const [text, setText] = useState(initialText);
+
+  const handleSave = () => {
+    if (text.trim()) {
+      onSave(emoji, text.trim());
+    }
+  };
+
+  return (
+    <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
+      <EmojiPicker selectedEmoji={emoji} onSelect={setEmoji} />
+      
+      <div className="flex gap-2">
+        <Input
+          placeholder="Décris l'activité..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="rounded-xl"
+          onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          autoFocus
+        />
+        <Button 
+          onClick={handleSave}
+          disabled={!text.trim()}
+          className="rounded-xl"
+        >
+          <Check className="w-4 h-4" />
+        </Button>
+      </div>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onCancel}
+        className="text-muted-foreground"
+      >
+        Annuler
+      </Button>
+    </div>
+  );
+};
 
 export const ActivityPicker = ({
   open,
@@ -25,146 +170,137 @@ export const ActivityPicker = ({
   entry,
   onToggleActivity,
   onAddCustomActivity,
+  onUpdateCustomActivity,
   onRemoveCustomActivity,
 }: ActivityPickerProps) => {
-  const [customText, setCustomText] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState('⭐');
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<CustomActivity | null>(null);
 
-  const handleAddCustom = () => {
-    if (customText.trim()) {
-      onAddCustomActivity(selectedEmoji, customText.trim());
-      setCustomText('');
-      setShowCustomForm(false);
+  const handleAddCustom = (emoji: string, text: string) => {
+    onAddCustomActivity(emoji, text);
+    setShowCustomForm(false);
+  };
+
+  const handleUpdateCustom = (emoji: string, text: string) => {
+    if (editingActivity) {
+      onUpdateCustomActivity(editingActivity.id, emoji, text);
+      setEditingActivity(null);
     }
+  };
+
+  const handleStartEdit = (activity: CustomActivity) => {
+    setEditingActivity(activity);
+    setShowCustomForm(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden rounded-2xl flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
             📚 {config.labelFr}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Activity grid */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Activités
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {ACTIVITIES.map((activity) => {
-                const isSelected = entry.activities.includes(activity.id);
-                return (
-                  <button
-                    key={activity.id}
-                    onClick={() => onToggleActivity(activity.id)}
-                    className={cn(
-                      'flex flex-col items-center gap-1 p-3 rounded-xl transition-all relative',
-                      'hover:scale-105 active:scale-95',
-                      isSelected 
-                        ? 'bg-primary/20 ring-2 ring-primary shadow-sm' 
-                        : 'bg-muted hover:bg-muted/80'
-                    )}
-                  >
-                    <span className="text-2xl">{activity.emoji}</span>
-                    <span className="text-xs font-medium text-center leading-tight">
-                      {activity.labelFr}
-                    </span>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-primary absolute top-1 right-1" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Custom activities */}
-          {entry.customActivities.length > 0 && (
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 py-4">
+            {/* Activity grid */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">
-                Activités personnalisées
+                Activités
               </label>
-              <div className="flex flex-wrap gap-2">
-                {entry.customActivities.map((ca) => (
-                  <div
-                    key={ca.id}
-                    className="flex items-center gap-2 bg-accent/50 rounded-full px-3 py-1.5"
-                  >
-                    <span>{ca.emoji}</span>
-                    <span className="text-sm">{ca.text}</span>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {ACTIVITIES.map((activity) => {
+                  const isSelected = entry.activities.includes(activity.id);
+                  return (
                     <button
-                      onClick={() => onRemoveCustomActivity(ca.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      key={activity.id}
+                      onClick={() => onToggleActivity(activity.id)}
+                      className={cn(
+                        'flex flex-col items-center gap-1 p-3 rounded-xl transition-all relative',
+                        'hover:scale-105 active:scale-95',
+                        isSelected 
+                          ? 'bg-primary/20 ring-2 ring-primary shadow-sm' 
+                          : 'bg-muted hover:bg-muted/80'
+                      )}
                     >
-                      <X className="w-4 h-4" />
+                      <span className="text-2xl">{activity.emoji}</span>
+                      <span className="text-xs font-medium text-center leading-tight">
+                        {activity.labelFr}
+                      </span>
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-primary absolute top-1 right-1" />
+                      )}
                     </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          )}
 
-          {/* Add custom activity form */}
-          {showCustomForm ? (
-            <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
-              <div className="flex flex-wrap gap-2">
-                {CUSTOM_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setSelectedEmoji(emoji)}
-                    className={cn(
-                      'text-2xl p-2 rounded-lg transition-all',
-                      selectedEmoji === emoji 
-                        ? 'bg-primary/20 ring-2 ring-primary' 
-                        : 'hover:bg-muted'
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+            {/* Custom activities */}
+            {entry.customActivities.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Activités personnalisées
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {entry.customActivities.map((ca) => (
+                    editingActivity?.id === ca.id ? (
+                      <div key={ca.id} className="w-full">
+                        <CustomActivityForm
+                          initialEmoji={ca.emoji}
+                          initialText={ca.text}
+                          onSave={handleUpdateCustom}
+                          onCancel={() => setEditingActivity(null)}
+                          isEditing
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={ca.id}
+                        className="flex items-center gap-2 bg-accent/50 rounded-full px-3 py-1.5 group"
+                      >
+                        <button
+                          onClick={() => handleStartEdit(ca)}
+                          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+                        >
+                          <span>{ca.emoji}</span>
+                          <span className="text-sm">{ca.text}</span>
+                          <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                        <button
+                          onClick={() => onRemoveCustomActivity(ca.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Décris l'activité..."
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                  className="rounded-xl"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustom()}
-                />
-                <Button 
-                  onClick={handleAddCustom}
-                  disabled={!customText.trim()}
-                  className="rounded-xl"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
+            )}
+
+            {/* Add custom activity form */}
+            {showCustomForm ? (
+              <CustomActivityForm
+                onSave={handleAddCustom}
+                onCancel={() => setShowCustomForm(false)}
+              />
+            ) : !editingActivity && (
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCustomForm(false)}
-                className="text-muted-foreground"
+                variant="outline"
+                onClick={() => setShowCustomForm(true)}
+                className="w-full rounded-xl border-dashed"
               >
-                Annuler
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter une activité personnalisée
               </Button>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setShowCustomForm(true)}
-              className="w-full rounded-xl border-dashed"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Ajouter une activité personnalisée
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        </ScrollArea>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-2 border-t">
           <Button 
             onClick={() => onOpenChange(false)}
             className="rounded-xl px-6"

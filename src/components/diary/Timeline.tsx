@@ -11,6 +11,7 @@ export const Timeline = () => {
     currentEntry, 
     toggleActivity, 
     addCustomActivity, 
+    updateCustomActivity,
     removeCustomActivity,
     updateLunchMenu 
   } = useDiary();
@@ -164,6 +165,7 @@ export const Timeline = () => {
           entry={currentEntry.periods[activePeriod!]}
           onToggleActivity={(activityId) => toggleActivity(activePeriod!, activityId)}
           onAddCustomActivity={(emoji, text) => addCustomActivity(activePeriod!, emoji, text)}
+          onUpdateCustomActivity={(id, emoji, text) => updateCustomActivity(activePeriod!, id, emoji, text)}
           onRemoveCustomActivity={(id) => removeCustomActivity(activePeriod!, id)}
         />
       )}
