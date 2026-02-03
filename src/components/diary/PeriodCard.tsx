@@ -16,48 +16,71 @@ const colorClasses: Record<string, string> = {
   rose: 'bg-rose hover:bg-rose/80',
 };
 
+interface ActivityDisplay {
+  emoji: string;
+  label: string;
+}
+
 export const PeriodCard = ({ config, entry, onClick }: PeriodCardProps) => {
   const hasContent = entry.activities.length > 0 || entry.customActivities.length > 0;
 
-  // Get activity emojis for display
-  const activityEmojis = entry.activities
-    .map(id => ACTIVITIES.find(a => a.id === id)?.emoji)
-    .filter(Boolean);
+  // Get activity display info (emoji + label)
+  const predefinedActivities: ActivityDisplay[] = entry.activities
+    .map(id => {
+      const activity = ACTIVITIES.find(a => a.id === id);
+      return activity ? { emoji: activity.emoji, label: activity.labelFr } : null;
+    })
+    .filter((a): a is ActivityDisplay => a !== null);
   
-  const customEmojis = entry.customActivities.map(ca => ca.emoji);
-  const allEmojis = [...activityEmojis, ...customEmojis];
+  const customActivitiesDisplay: ActivityDisplay[] = entry.customActivities.map(ca => ({
+    emoji: ca.emoji,
+    label: ca.text,
+  }));
+
+  const allActivities = [...predefinedActivities, ...customActivitiesDisplay];
+  const displayCount = 3;
+  const visibleActivities = allActivities.slice(0, displayCount);
+  const remainingCount = allActivities.length - displayCount;
 
   return (
     <button
       onClick={onClick}
       className={cn(
         'w-full p-4 rounded-2xl transition-all duration-200 shadow-sm',
-        'flex flex-col items-center gap-2 min-h-[100px]',
+        'flex flex-col gap-2 min-h-[100px]',
         'hover:shadow-md hover:scale-[1.02] active:scale-[0.98]',
         'focus:outline-none focus:ring-2 focus:ring-primary/50',
         colorClasses[config.color]
       )}
     >
       {/* Period title */}
-      <h3 className="text-sm font-semibold text-foreground/90">
+      <h3 className="text-sm font-semibold text-foreground/90 text-center">
         {config.labelFr}
       </h3>
 
       {/* Content preview or add prompt */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex flex-col justify-center">
         {hasContent ? (
-          <div className="flex flex-wrap gap-1.5 justify-center">
-            {allEmojis.slice(0, 4).map((emoji, idx) => (
-              <span key={idx} className="text-xl">{emoji}</span>
+          <div className="space-y-1">
+            {visibleActivities.map((activity, idx) => (
+              <div 
+                key={idx} 
+                className="flex items-center gap-1.5 text-left"
+              >
+                <span className="text-base flex-shrink-0">{activity.emoji}</span>
+                <span className="text-xs font-medium text-foreground/80 truncate">
+                  {activity.label}
+                </span>
+              </div>
             ))}
-            {allEmojis.length > 4 && (
-              <span className="text-xs text-muted-foreground font-medium">
-                +{allEmojis.length - 4}
-              </span>
+            {remainingCount > 0 && (
+              <p className="text-xs text-muted-foreground font-medium pl-6">
+                +{remainingCount} autre{remainingCount > 1 ? 's' : ''}
+              </p>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center justify-center gap-1 text-muted-foreground">
             <Plus className="w-4 h-4" />
             <span className="text-xs font-medium">Ajouter</span>
           </div>

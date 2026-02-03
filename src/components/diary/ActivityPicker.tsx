@@ -6,6 +6,7 @@ import { PeriodConfig, PeriodEntry, ACTIVITIES, CustomActivity } from '@/types/d
 import { cn } from '@/lib/utils';
 import { X, Plus, Check, Pencil } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EmojiPicker } from './EmojiPicker';
 
 interface ActivityPickerProps {
   open: boolean;
@@ -17,93 +18,6 @@ interface ActivityPickerProps {
   onUpdateCustomActivity: (customActivityId: string, emoji: string, text: string) => void;
   onRemoveCustomActivity: (customActivityId: string) => void;
 }
-
-const EMOJI_CATEGORIES = [
-  { 
-    id: 'school', 
-    label: 'École', 
-    emojis: ['📝', '📖', '📚', '✏️', '🖍️', '📐', '🎒', '🏫'] 
-  },
-  { 
-    id: 'sports', 
-    label: 'Sports', 
-    emojis: ['⚽', '🏀', '🎾', '🏃', '🤸', '🚴', '🏊', '⛹️'] 
-  },
-  { 
-    id: 'arts', 
-    label: 'Arts', 
-    emojis: ['🎨', '🎭', '🎪', '🎵', '🎤', '🎹', '🎸', '🎬'] 
-  },
-  { 
-    id: 'nature', 
-    label: 'Nature', 
-    emojis: ['🌳', '🌸', '🌻', '🐦', '🦋', '🐶', '🐱', '🐰'] 
-  },
-  { 
-    id: 'food', 
-    label: 'Nourriture', 
-    emojis: ['🍎', '🍕', '🍦', '🧁', '🍪', '🥤', '🍩', '🍫'] 
-  },
-  { 
-    id: 'fun', 
-    label: 'Divertissement', 
-    emojis: ['⭐', '❤️', '🌈', '✨', '🎁', '🎯', '🎮', '🧩'] 
-  },
-  { 
-    id: 'people', 
-    label: 'Personnes', 
-    emojis: ['👋', '🤝', '💬', '👨‍👩‍👧', '👩‍🏫', '👫', '🙋', '💪'] 
-  },
-];
-
-interface EmojiPickerProps {
-  selectedEmoji: string;
-  onSelect: (emoji: string) => void;
-}
-
-const EmojiPicker = ({ selectedEmoji, onSelect }: EmojiPickerProps) => {
-  const [activeCategory, setActiveCategory] = useState(EMOJI_CATEGORIES[0].id);
-
-  return (
-    <div className="space-y-3">
-      {/* Category tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {EMOJI_CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setActiveCategory(category.id)}
-            className={cn(
-              'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all',
-              activeCategory === category.id
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-            )}
-          >
-            {category.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Emoji grid for active category */}
-      <div className="flex flex-wrap gap-2">
-        {EMOJI_CATEGORIES.find(c => c.id === activeCategory)?.emojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => onSelect(emoji)}
-            className={cn(
-              'text-2xl p-2 rounded-lg transition-all',
-              selectedEmoji === emoji 
-                ? 'bg-primary/20 ring-2 ring-primary' 
-                : 'hover:bg-muted'
-            )}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 interface CustomActivityFormProps {
   initialEmoji?: string;
@@ -193,8 +107,16 @@ export const ActivityPicker = ({
     setShowCustomForm(false);
   };
 
+  const handleClose = (openState: boolean) => {
+    if (!openState) {
+      setShowCustomForm(false);
+      setEditingActivity(null);
+    }
+    onOpenChange(openState);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden rounded-2xl flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
@@ -204,44 +126,31 @@ export const ActivityPicker = ({
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6 py-4">
-            {/* Activity grid */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Activités
-              </label>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {ACTIVITIES.map((activity) => {
-                  const isSelected = entry.activities.includes(activity.id);
-                  return (
-                    <button
-                      key={activity.id}
-                      onClick={() => onToggleActivity(activity.id)}
-                      className={cn(
-                        'flex flex-col items-center gap-1 p-3 rounded-xl transition-all relative',
-                        'hover:scale-105 active:scale-95',
-                        isSelected 
-                          ? 'bg-primary/20 ring-2 ring-primary shadow-sm' 
-                          : 'bg-muted hover:bg-muted/80'
-                      )}
-                    >
-                      <span className="text-2xl">{activity.emoji}</span>
-                      <span className="text-xs font-medium text-center leading-tight">
-                        {activity.labelFr}
-                      </span>
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-primary absolute top-1 right-1" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Add custom activity button - ALWAYS VISIBLE AT TOP */}
+            {!showCustomForm && !editingActivity && (
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomForm(true)}
+                className="w-full rounded-xl border-dashed border-2 py-6"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Ajouter une activité personnalisée
+              </Button>
+            )}
+
+            {/* Add custom activity form */}
+            {showCustomForm && (
+              <CustomActivityForm
+                onSave={handleAddCustom}
+                onCancel={() => setShowCustomForm(false)}
+              />
+            )}
 
             {/* Custom activities */}
             {entry.customActivities.length > 0 && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
-                  Activités personnalisées
+                  Mes activités personnalisées
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {entry.customActivities.map((ca) => (
@@ -281,28 +190,44 @@ export const ActivityPicker = ({
               </div>
             )}
 
-            {/* Add custom activity form */}
-            {showCustomForm ? (
-              <CustomActivityForm
-                onSave={handleAddCustom}
-                onCancel={() => setShowCustomForm(false)}
-              />
-            ) : !editingActivity && (
-              <Button
-                variant="outline"
-                onClick={() => setShowCustomForm(true)}
-                className="w-full rounded-xl border-dashed"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter une activité personnalisée
-              </Button>
-            )}
+            {/* Activity grid */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Activités prédéfinies
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {ACTIVITIES.map((activity) => {
+                  const isSelected = entry.activities.includes(activity.id);
+                  return (
+                    <button
+                      key={activity.id}
+                      onClick={() => onToggleActivity(activity.id)}
+                      className={cn(
+                        'flex flex-col items-center gap-1 p-3 rounded-xl transition-all relative',
+                        'hover:scale-105 active:scale-95',
+                        isSelected 
+                          ? 'bg-primary/20 ring-2 ring-primary shadow-sm' 
+                          : 'bg-muted hover:bg-muted/80'
+                      )}
+                    >
+                      <span className="text-2xl">{activity.emoji}</span>
+                      <span className="text-xs font-medium text-center leading-tight">
+                        {activity.labelFr}
+                      </span>
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-primary absolute top-1 right-1" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </ScrollArea>
 
         <div className="flex justify-end pt-2 border-t">
           <Button 
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleClose(false)}
             className="rounded-xl px-6"
           >
             Terminé
