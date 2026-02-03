@@ -1,123 +1,124 @@
 
 
-# Enhance Activity Selection & Editing
+# Améliorations de l'UX des Activités
 
-## Overview
+## Problèmes identifiés
 
-Two improvements to the activity picker:
-1. Expand the emoji selection for custom activities
-2. Add the ability to edit existing custom activities
+1. **Bouton d'ajout caché** - Le formulaire d'ajout personnalisé prend beaucoup d'espace et peut cacher le bouton "Ajouter une activité personnalisée"
+2. **Emoji picker limité** - Seulement ~56 emojis disponibles, mais tu veux des emojis spécifiques comme 📅 (calendrier)
+3. **Affichage incomplet** - Sur la carte de période, seuls les emojis apparaissent sans le texte
 
 ---
 
-## Changes
+## Solutions proposées
 
-### 1. Expanded Emoji Picker
+### 1. Corriger le bouton d'ajout caché
 
-**Current state:** 12 emojis to choose from
+**Changements dans `ActivityPicker.tsx`:**
+- Déplacer le bouton "Ajouter une activité personnalisée" AVANT la grille d'activités prédéfinies (ainsi il est toujours visible en haut)
+- OU le mettre en sticky en bas du dialog, toujours visible
+- Réduire la hauteur du formulaire d'emoji quand il est ouvert
+
+### 2. Emoji Picker complet avec recherche
+
+**Ajouter une bibliothèque d'emoji ou un système de recherche:**
+- Intégrer `emoji-picker-react` ou créer un picker avec toutes les catégories Unicode
+- Ajouter un champ de recherche pour trouver rapidement un emoji par mot-clé (ex: "calendar" → 📅)
+- Garder les catégories actuelles comme raccourcis rapides
+
+```text
+┌────────────────────────────────────┐
+│ 🔍 Rechercher un emoji...          │
+├────────────────────────────────────┤
+│ École | Sports | Arts | ... | Tous │
+├────────────────────────────────────┤
+│ 📅 📆 🗓️ 📝 📖 📚 ✏️ 🖍️ ...       │
+└────────────────────────────────────┘
 ```
-⭐ ❤️ 🌟 ✨ 🎁 🎯 🌈 🦋 🐶 🐱 🎪 🎭
+
+### 3. Afficher emoji + texte sur les cartes de période
+
+**Changements dans `PeriodCard.tsx`:**
+- Afficher l'emoji ET le label pour chaque activité
+- Format compact: `📝 Écriture` au lieu de juste `📝`
+- Pour les activités personnalisées: `📅 Date` avec le texte saisi
+
+**Avant:**
+```text
+┌─────────────────┐
+│     Matin       │
+│  📝 📖 🔢 📚    │
+└─────────────────┘
 ```
 
-**New design:** Organized emoji categories with 50+ options
-
-| Category | Emojis |
-|----------|--------|
-| School | 📝 📖 📚 ✏️ 🖍️ 📐 🎒 🏫 |
-| Sports | ⚽ 🏀 🎾 🏃 🤸 🚴 🏊 ⛹️ |
-| Arts | 🎨 🎭 🎪 🎵 🎤 🎹 🎸 🎬 |
-| Nature | 🌳 🌸 🌻 🐦 🦋 🐶 🐱 🐰 |
-| Food | 🍎 🍕 🍦 🧁 🍪 🥤 🍩 🍫 |
-| Fun | ⭐ ❤️ 🌈 ✨ 🎁 🎯 🎮 🧩 |
-| People | 👋 🤝 💬 👨‍👩‍👧 👩‍🏫 👫 🙋 💪 |
-
-The emoji picker will show categories as tabs or scrollable sections within the custom activity form.
-
-### 2. Edit Custom Activities
-
-**Current behavior:** 
-- Click X to delete a custom activity
-- No way to edit
-
-**New behavior:**
-- Click on a custom activity to edit it
-- Opens inline edit form with:
-  - Emoji selector (same expanded picker)
-  - Text input pre-filled with current text
-  - Save button
-  - Cancel button
-- X button still available for quick delete
+**Après:**
+```text
+┌─────────────────────┐
+│       Matin         │
+│ 📝 Écriture         │
+│ 📖 Lecture          │
+│ 📅 Date importante  │
+└─────────────────────┘
+```
 
 ---
 
-## Files to Modify
+## Détails techniques
 
-### `src/components/diary/ActivityPicker.tsx`
+### Fichiers à modifier
 
-1. **Expand emoji list** - Replace the 12 emojis with categorized groups
-2. **Add EmojiPicker component** (inline or separate) - Shows categories, allows scrolling/browsing
-3. **Add edit mode for custom activities** - When clicking a custom activity, switch to edit mode
-4. **Add state management** - Track which activity is being edited
+1. **`src/components/diary/ActivityPicker.tsx`**
+   - Ajouter un composant `FullEmojiPicker` avec recherche
+   - Réorganiser le layout pour que le bouton d'ajout soit toujours visible
+   - Utiliser un dataset d'emojis plus complet
 
-### `src/hooks/useDiary.ts`
+2. **`src/components/diary/PeriodCard.tsx`**
+   - Modifier l'affichage pour montrer emoji + texte
+   - Adapter le layout pour accommoder plus de contenu
 
-1. **Add `updateCustomActivity` function** - Update an existing custom activity by ID
+3. **Nouvelle dépendance potentielle**
+   - Option A: Créer notre propre dataset d'emojis (~200 emojis organisés)
+   - Option B: Utiliser `emoji-picker-react` pour un picker complet avec recherche
 
-### `src/types/diary.ts`
-
-No changes needed - CustomActivity type already has `id`, `emoji`, `text`
-
----
-
-## Technical Details
-
-### New function in useDiary hook
+### Exemple de données emoji étendues
 
 ```typescript
-const updateCustomActivity = useCallback((
-  periodId: PeriodId, 
-  customActivityId: string, 
-  emoji: string, 
-  text: string
-) => {
-  const period = currentEntry.periods[periodId];
-  updatePeriod(periodId, {
-    ...period,
-    customActivities: period.customActivities.map(ca =>
-      ca.id === customActivityId 
-        ? { ...ca, emoji, text } 
-        : ca
-    ),
-  });
-}, [currentEntry, updatePeriod]);
+const EMOJI_DATA = {
+  search: [
+    { emoji: '📅', keywords: ['calendar', 'date', 'calendrier', 'jour'] },
+    { emoji: '📆', keywords: ['calendar', 'date', 'calendrier'] },
+    { emoji: '🗓️', keywords: ['calendar', 'spiral', 'calendrier'] },
+    // ... beaucoup plus
+  ],
+  categories: {
+    school: ['📝', '📖', '📚', ...],
+    time: ['📅', '📆', '🗓️', '⏰', '🕐', ...],
+    // ...
+  }
+};
 ```
 
-### UI Flow for Editing
+### Nouveau layout du dialog
 
-1. User sees custom activity pill: `[⭐ Mon activité] [X]`
-2. User clicks on the pill (not the X)
-3. Pill transforms into edit form inline:
-   - Emoji selector appears
-   - Text input with current value
-   - Save/Cancel buttons
-4. User makes changes and clicks Save
-5. Form closes, updated activity shown
-
-### Emoji Categories Data Structure
-
-```typescript
-const EMOJI_CATEGORIES = [
-  { 
-    id: 'school', 
-    label: 'École', 
-    emojis: ['📝', '📖', '📚', '✏️', '🖍️', '📐', '🎒', '🏫'] 
-  },
-  { 
-    id: 'sports', 
-    label: 'Sports', 
-    emojis: ['⚽', '🏀', '🎾', '🏃', '🤸', '🚴', '🏊', '⛹️'] 
-  },
-  // ... more categories
-];
+```text
+┌──────────────────────────────────────┐
+│ 📚 Matin                        [X]  │
+├──────────────────────────────────────┤
+│ ┌──────────────────────────────────┐ │
+│ │ + Ajouter une activité perso     │ │ ← Toujours visible
+│ └──────────────────────────────────┘ │
+├──────────────────────────────────────┤
+│ Activités                            │
+│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐     │
+│ │ 📝  │ │ 📖  │ │ 🔢  │ │ 🎨  │     │
+│ │Écri.│ │Lect.│ │Math │ │Dessin│     │
+│ └─────┘ └─────┘ └─────┘ └─────┘     │
+│                ...                   │
+├──────────────────────────────────────┤
+│ Mes activités                        │
+│ [📅 Date importante] [⭐ Special]    │
+├──────────────────────────────────────┤
+│                          [Terminé]   │
+└──────────────────────────────────────┘
 ```
 
