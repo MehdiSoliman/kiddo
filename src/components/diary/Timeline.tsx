@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { TIME_SLOTS, TimeSlotId } from '@/types/diary';
+import { CHECKPOINTS, PERIODS, PeriodId } from '@/types/diary';
 import { useDiary } from '@/hooks/useDiary';
-import { TimeSlotCard } from './TimeSlotCard';
+import { CheckpointMarker } from './CheckpointMarker';
+import { PeriodCard } from './PeriodCard';
 import { ActivityPicker } from './ActivityPicker';
+import { LunchInput } from './LunchInput';
 
 export const Timeline = () => {
   const { 
@@ -13,39 +15,166 @@ export const Timeline = () => {
     updateLunchMenu 
   } = useDiary();
   
-  const [activeSlot, setActiveSlot] = useState<TimeSlotId | null>(null);
+  const [activePeriod, setActivePeriod] = useState<PeriodId | null>(null);
+  const [showLunchInput, setShowLunchInput] = useState(false);
 
-  const activeConfig = activeSlot 
-    ? TIME_SLOTS.find(s => s.id === activeSlot) 
+  const activeConfig = activePeriod 
+    ? PERIODS.find(p => p.id === activePeriod) 
     : null;
+
+  // Get checkpoint by ID
+  const getCheckpoint = (id: string) => CHECKPOINTS.find(c => c.id === id)!;
 
   return (
     <div className="w-full">
-      {/* Timeline cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {TIME_SLOTS.map((slot) => (
-          <TimeSlotCard
-            key={slot.id}
-            config={slot}
-            entry={currentEntry.slots[slot.id]}
-            onClick={() => setActiveSlot(slot.id)}
+      {/* Desktop/Tablet horizontal timeline */}
+      <div className="hidden md:flex items-center justify-between gap-2">
+        {/* Start checkpoint */}
+        <CheckpointMarker config={getCheckpoint('start')} />
+        
+        {/* Morning period */}
+        <div className="flex-1 max-w-[140px]">
+          <PeriodCard
+            config={PERIODS[0]}
+            entry={currentEntry.periods['morning']}
+            onClick={() => setActivePeriod('morning')}
           />
-        ))}
+        </div>
+        
+        {/* Morning break checkpoint */}
+        <CheckpointMarker config={getCheckpoint('morning-break')} />
+        
+        {/* Late morning period */}
+        <div className="flex-1 max-w-[140px]">
+          <PeriodCard
+            config={PERIODS[1]}
+            entry={currentEntry.periods['late-morning']}
+            onClick={() => setActivePeriod('late-morning')}
+          />
+        </div>
+        
+        {/* Lunch checkpoint (clickable) */}
+        <CheckpointMarker 
+          config={getCheckpoint('lunch')} 
+          isLunch 
+          lunchMenu={currentEntry.lunchMenu}
+          onClick={() => setShowLunchInput(true)}
+        />
+        
+        {/* Afternoon period */}
+        <div className="flex-1 max-w-[140px]">
+          <PeriodCard
+            config={PERIODS[2]}
+            entry={currentEntry.periods['afternoon']}
+            onClick={() => setActivePeriod('afternoon')}
+          />
+        </div>
+        
+        {/* Afternoon break checkpoint */}
+        <CheckpointMarker config={getCheckpoint('afternoon-break')} />
+        
+        {/* Late afternoon period */}
+        <div className="flex-1 max-w-[140px]">
+          <PeriodCard
+            config={PERIODS[3]}
+            entry={currentEntry.periods['late-afternoon']}
+            onClick={() => setActivePeriod('late-afternoon')}
+          />
+        </div>
+        
+        {/* Home checkpoint */}
+        <CheckpointMarker config={getCheckpoint('home')} />
+      </div>
+
+      {/* Mobile vertical timeline */}
+      <div className="md:hidden space-y-3">
+        {/* Start */}
+        <div className="flex items-center gap-3">
+          <CheckpointMarker config={getCheckpoint('start')} />
+          <div className="h-px flex-1 bg-muted" />
+        </div>
+        
+        {/* Morning */}
+        <PeriodCard
+          config={PERIODS[0]}
+          entry={currentEntry.periods['morning']}
+          onClick={() => setActivePeriod('morning')}
+        />
+        
+        {/* Morning break */}
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-muted" />
+          <CheckpointMarker config={getCheckpoint('morning-break')} />
+          <div className="h-px flex-1 bg-muted" />
+        </div>
+        
+        {/* Late morning */}
+        <PeriodCard
+          config={PERIODS[1]}
+          entry={currentEntry.periods['late-morning']}
+          onClick={() => setActivePeriod('late-morning')}
+        />
+        
+        {/* Lunch */}
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-muted" />
+          <CheckpointMarker 
+            config={getCheckpoint('lunch')} 
+            isLunch 
+            lunchMenu={currentEntry.lunchMenu}
+            onClick={() => setShowLunchInput(true)}
+          />
+          <div className="h-px flex-1 bg-muted" />
+        </div>
+        
+        {/* Afternoon */}
+        <PeriodCard
+          config={PERIODS[2]}
+          entry={currentEntry.periods['afternoon']}
+          onClick={() => setActivePeriod('afternoon')}
+        />
+        
+        {/* Afternoon break */}
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-muted" />
+          <CheckpointMarker config={getCheckpoint('afternoon-break')} />
+          <div className="h-px flex-1 bg-muted" />
+        </div>
+        
+        {/* Late afternoon */}
+        <PeriodCard
+          config={PERIODS[3]}
+          entry={currentEntry.periods['late-afternoon']}
+          onClick={() => setActivePeriod('late-afternoon')}
+        />
+        
+        {/* Home */}
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-muted" />
+          <CheckpointMarker config={getCheckpoint('home')} />
+        </div>
       </div>
 
       {/* Activity picker dialog */}
       {activeConfig && (
         <ActivityPicker
-          open={!!activeSlot}
-          onOpenChange={(open) => !open && setActiveSlot(null)}
+          open={!!activePeriod}
+          onOpenChange={(open) => !open && setActivePeriod(null)}
           config={activeConfig}
-          entry={currentEntry.slots[activeSlot!]}
-          onToggleActivity={(activityId) => toggleActivity(activeSlot!, activityId)}
-          onAddCustomActivity={(emoji, text) => addCustomActivity(activeSlot!, emoji, text)}
-          onRemoveCustomActivity={(id) => removeCustomActivity(activeSlot!, id)}
-          onUpdateLunchMenu={activeSlot === 'lunch' ? updateLunchMenu : undefined}
+          entry={currentEntry.periods[activePeriod!]}
+          onToggleActivity={(activityId) => toggleActivity(activePeriod!, activityId)}
+          onAddCustomActivity={(emoji, text) => addCustomActivity(activePeriod!, emoji, text)}
+          onRemoveCustomActivity={(id) => removeCustomActivity(activePeriod!, id)}
         />
       )}
+
+      {/* Lunch menu input dialog */}
+      <LunchInput
+        open={showLunchInput}
+        onOpenChange={setShowLunchInput}
+        lunchMenu={currentEntry.lunchMenu || ''}
+        onUpdateLunchMenu={updateLunchMenu}
+      />
     </div>
   );
 };
