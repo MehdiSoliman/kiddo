@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { PeriodConfig, PeriodEntry, ACTIVITIES, CustomActivity } from '@/types/diary';
 import { cn } from '@/lib/utils';
 import { X, Plus, Check, Pencil } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { EmojiPicker } from './EmojiPicker';
 
 interface ActivityPickerProps {
@@ -117,14 +117,14 @@ export const ActivityPicker = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden rounded-2xl flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-lg h-[85vh] rounded-2xl flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-3 text-xl">
             📚 {config.labelFr}
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-6 py-4">
             {/* Add custom activity button - ALWAYS VISIBLE AT TOP */}
             {!showCustomForm && !editingActivity && (
@@ -223,9 +223,9 @@ export const ActivityPicker = ({
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="flex justify-end pt-2 border-t">
+        <div className="flex justify-end px-6 py-4 border-t mt-auto">
           <Button 
             onClick={() => handleClose(false)}
             className="rounded-xl px-6"
