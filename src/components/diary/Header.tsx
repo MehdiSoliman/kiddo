@@ -1,18 +1,30 @@
-import { format } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarDays, BookOpen } from 'lucide-react';
+import { CalendarDays, BookOpen, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   selectedDate: Date;
-  view: 'timeline' | 'calendar';
-  onViewChange: (view: 'timeline' | 'calendar') => void;
+  view: 'timeline' | 'week' | 'calendar';
+  onViewChange: (view: 'timeline' | 'week' | 'calendar') => void;
 }
 
 export const Header = ({ selectedDate, view, onViewChange }: HeaderProps) => {
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
   const formattedDate = format(selectedDate, "EEEE d MMMM", { locale: fr });
+
+  // Get week range for week view subtitle
+  const getWeekRange = () => {
+    const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const friday = addDays(monday, 4);
+    return `Semaine du ${format(monday, 'd', { locale: fr })} au ${format(friday, 'd MMMM', { locale: fr })}`;
+  };
+
+  const getSubtitle = () => {
+    if (view === 'week') return getWeekRange();
+    if (isToday) return "Aujourd'hui";
+    return formattedDate;
+  };
 
   return (
     <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
@@ -22,7 +34,7 @@ export const Header = ({ selectedDate, view, onViewChange }: HeaderProps) => {
           Ma Journée d'École
         </h1>
         <p className="text-lg text-muted-foreground mt-1 capitalize">
-          {isToday ? "Aujourd'hui" : formattedDate}
+          {getSubtitle()}
         </p>
       </div>
 
@@ -34,6 +46,14 @@ export const Header = ({ selectedDate, view, onViewChange }: HeaderProps) => {
         >
           <BookOpen className="w-4 h-4" />
           Aujourd'hui
+        </Button>
+        <Button
+          variant={view === 'week' ? 'default' : 'outline'}
+          onClick={() => onViewChange('week')}
+          className="rounded-xl gap-2"
+        >
+          <CalendarRange className="w-4 h-4" />
+          Semaine
         </Button>
         <Button
           variant={view === 'calendar' ? 'default' : 'outline'}
