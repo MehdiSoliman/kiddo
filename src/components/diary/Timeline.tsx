@@ -6,7 +6,11 @@ import { PeriodCard } from './PeriodCard';
 import { ActivityPicker } from './ActivityPicker';
 import { LunchInput } from './LunchInput';
 
-export const Timeline = () => {
+interface TimelineProps {
+  selectedDate?: Date;
+}
+
+export const Timeline = ({ selectedDate }: TimelineProps) => {
   const { 
     currentEntry, 
     toggleActivity, 
@@ -14,7 +18,7 @@ export const Timeline = () => {
     updateCustomActivity,
     removeCustomActivity,
     updateLunchMenu 
-  } = useDiary();
+  } = useDiary(selectedDate);
   
   const [activePeriod, setActivePeriod] = useState<PeriodId | null>(null);
   const [showLunchInput, setShowLunchInput] = useState(false);

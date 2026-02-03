@@ -25,9 +25,13 @@ const saveAllEntries = (entries: Record<string, DayEntry>) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 };
 
-export const useDiary = () => {
+export const useDiary = (externalDate?: Date) => {
   const [entries, setEntries] = useState<Record<string, DayEntry>>({});
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [internalDate, setInternalDate] = useState<Date>(new Date());
+  
+  // Use external date if provided, otherwise use internal state
+  const selectedDate = externalDate ?? internalDate;
+  const setSelectedDate = setInternalDate;
 
   // Load entries on mount
   useEffect(() => {

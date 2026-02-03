@@ -32,7 +32,7 @@ const Index = () => {
         />
 
         {view === 'timeline' ? (
-          <Timeline />
+          <Timeline selectedDate={selectedDate} />
         ) : view === 'week' ? (
           <WeekView onDayClick={(date) => {
             setSelectedDate(date);
