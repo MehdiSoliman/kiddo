@@ -14,9 +14,10 @@ interface DayRowProps {
   date: Date;
   entry: DayEntry | null;
   isToday: boolean;
+  onClick: () => void;
 }
 
-const DayRow = ({ date, entry, isToday }: DayRowProps) => {
+const DayRow = ({ date, entry, isToday, onClick }: DayRowProps) => {
   const dayName = format(date, 'EEEE', { locale: fr });
   const dayDate = format(date, 'd MMMM', { locale: fr });
 
@@ -54,10 +55,13 @@ const DayRow = ({ date, entry, isToday }: DayRowProps) => {
   };
 
   return (
-    <div className={cn(
-      "bg-card rounded-2xl shadow-sm overflow-hidden",
-      isToday && "ring-2 ring-primary"
-    )}>
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full text-left bg-card rounded-2xl shadow-sm overflow-hidden transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer",
+        isToday && "ring-2 ring-primary"
+      )}
+    >
       {/* Day header */}
       <div className={cn(
         "px-4 py-3 border-b",
@@ -69,48 +73,69 @@ const DayRow = ({ date, entry, isToday }: DayRowProps) => {
         </h3>
       </div>
 
-      {/* Periods grid */}
+      {/* Periods grid: Matin | Fin de matin | Midi | Après-midi | Fin d'après-midi */}
       <div className="grid grid-cols-5 divide-x">
-        {PERIODS.map((period) => (
-          <div
-            key={period.id}
-            className={cn(
-              "p-3 min-h-[80px]",
-              periodColors[period.id]
-            )}
-          >
-            <div className="text-xs font-medium text-muted-foreground mb-2">
-              {period.labelFr}
-            </div>
-            {getActivityDisplay(period.id) || (
-              <div className="text-xs text-muted-foreground/50 italic">
-                —
-              </div>
-            )}
+        {/* Matin */}
+        <div className={cn("p-3 min-h-[80px]", periodColors['morning'])}>
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            {PERIODS.find(p => p.id === 'morning')?.labelFr}
           </div>
-        ))}
+          {getActivityDisplay('morning') || (
+            <div className="text-xs text-muted-foreground/50 italic">—</div>
+          )}
+        </div>
 
-        {/* Lunch column */}
+        {/* Fin de matin */}
+        <div className={cn("p-3 min-h-[80px]", periodColors['late-morning'])}>
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            {PERIODS.find(p => p.id === 'late-morning')?.labelFr}
+          </div>
+          {getActivityDisplay('late-morning') || (
+            <div className="text-xs text-muted-foreground/50 italic">—</div>
+          )}
+        </div>
+
+        {/* Midi */}
         <div className="p-3 min-h-[80px] bg-peach/30">
           <div className="text-xs font-medium text-muted-foreground mb-2">
             🍽️ Midi
           </div>
           {entry?.lunchMenu ? (
-            <div className="text-xs">
-              {entry.lunchMenu}
-            </div>
+            <div className="text-xs">{entry.lunchMenu}</div>
           ) : (
-            <div className="text-xs text-muted-foreground/50 italic">
-              —
-            </div>
+            <div className="text-xs text-muted-foreground/50 italic">—</div>
+          )}
+        </div>
+
+        {/* Après-midi */}
+        <div className={cn("p-3 min-h-[80px]", periodColors['afternoon'])}>
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            {PERIODS.find(p => p.id === 'afternoon')?.labelFr}
+          </div>
+          {getActivityDisplay('afternoon') || (
+            <div className="text-xs text-muted-foreground/50 italic">—</div>
+          )}
+        </div>
+
+        {/* Fin d'après-midi */}
+        <div className={cn("p-3 min-h-[80px]", periodColors['late-afternoon'])}>
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            {PERIODS.find(p => p.id === 'late-afternoon')?.labelFr}
+          </div>
+          {getActivityDisplay('late-afternoon') || (
+            <div className="text-xs text-muted-foreground/50 italic">—</div>
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
-export const WeekView = () => {
+interface WeekViewProps {
+  onDayClick?: (date: Date) => void;
+}
+
+export const WeekView = ({ onDayClick }: WeekViewProps) => {
   const { getEntry } = useDiary();
   const weekDays = getWeekDays(new Date());
   const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -131,6 +156,7 @@ export const WeekView = () => {
             date={day}
             entry={getEntry(day)}
             isToday={isToday}
+            onClick={() => onDayClick?.(day)}
           />
         );
       })}

@@ -34,7 +34,10 @@ const Index = () => {
         {view === 'timeline' ? (
           <Timeline />
         ) : view === 'week' ? (
-          <WeekView />
+          <WeekView onDayClick={(date) => {
+            setSelectedDate(date);
+            setView('timeline');
+          }} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CalendarView onSelectDate={handleSelectDate} />
