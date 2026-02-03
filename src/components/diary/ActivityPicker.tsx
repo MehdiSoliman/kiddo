@@ -44,35 +44,35 @@ const CustomActivityForm = ({
   };
 
   return (
-    <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
+    <div className="space-y-2 p-3 bg-muted/50 rounded-xl">
       <EmojiPicker selectedEmoji={emoji} onSelect={setEmoji} />
       
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <Input
           placeholder="Décris l'activité..."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="rounded-xl"
+          className="rounded-xl flex-1"
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           autoFocus
         />
         <Button 
           onClick={handleSave}
           disabled={!text.trim()}
+          size="sm"
           className="rounded-xl"
         >
           <Check className="w-4 h-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          className="text-muted-foreground"
+        >
+          Annuler
+        </Button>
       </div>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onCancel}
-        className="text-muted-foreground"
-      >
-        Annuler
-      </Button>
     </div>
   );
 };
