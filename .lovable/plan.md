@@ -1,92 +1,81 @@
 
-# Améliorations de la Vue Semaine
+# Correction : Afficher les données du jour sélectionné
 
-## Changements demandés
+## Problème identifié
 
-1. **Réorganiser les colonnes** : Matin → Fin de matin → Midi → Après-midi → Fin d'après-midi
-2. **Rendre les jours cliquables** : Cliquer sur un jour ouvre la vue timeline avec ce jour sélectionné
+Le composant `Timeline` appelle `useDiary()` de manière indépendante, créant son propre état `selectedDate` initialisé à aujourd'hui. Quand tu cliques sur un autre jour dans la vue Semaine :
 
----
+1. `Index.tsx` met à jour sa propre `selectedDate`
+2. `Timeline` ignore cette date et utilise toujours sa propre date (aujourd'hui)
+3. Résultat : tu vois toujours les activités d'aujourd'hui
 
-## Modifications à apporter
+## Solution
 
-### Fichier `src/components/diary/WeekView.tsx`
-
-**1. Réorganiser la grille des colonnes**
-
-Actuellement les périodes sont affichées dans l'ordre, puis Midi à la fin :
-```text
-Matin | Fin de matin | Après-midi | Fin d'après-midi | Midi
-```
-
-Nouveau layout avec Midi au milieu :
-```text
-Matin | Fin de matin | Midi | Après-midi | Fin d'après-midi
-```
-
-**2. Ajouter le callback de sélection**
-
-- Accepter une prop `onDayClick: (date: Date) => void`
-- Ajouter un style `cursor-pointer` et effet `hover` sur chaque jour
-- Appeler `onDayClick` avec la date du jour cliqué
-
-### Fichier `src/pages/Index.tsx`
-
-**3. Gérer la navigation depuis WeekView**
-
-Quand un jour est cliqué dans WeekView :
-- Mettre à jour `selectedDate` avec la date cliquée
-- Changer la vue vers `timeline`
+Passer la `selectedDate` en prop à `Timeline` et modifier `useDiary` pour qu'il accepte une date externe.
 
 ---
 
-## Aperçu du résultat
+## Fichiers à modifier
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ LUNDI 3 FÉVRIER                                      → Cliquable │
-├──────────┬──────────┬──────────┬──────────┬──────────────────────┤
-│  Matin   │ Fin mat. │   Midi   │  Après   │  Fin d'après-midi    │
-│ 📝 Écrit │ 📖 Lect. │ 🍕 Pizza │ 🎨 Dessin│  📚 Histoire         │
-└──────────┴──────────┴──────────┴──────────┴──────────────────────┘
+### 1. `src/hooks/useDiary.ts`
+
+Modifier le hook pour accepter une date optionnelle en paramètre :
+
+```typescript
+export const useDiary = (externalDate?: Date) => {
+  const [entries, setEntries] = useState<Record<string, DayEntry>>({});
+  const [internalDate, setInternalDate] = useState<Date>(new Date());
+  
+  // Utiliser la date externe si fournie, sinon la date interne
+  const selectedDate = externalDate ?? internalDate;
+  const setSelectedDate = setInternalDate;
+  
+  // ... reste du code inchangé
+}
 ```
 
-Au clic sur ce bloc → Vue "Aujourd'hui" avec Lundi 3 Février sélectionné
+### 2. `src/components/diary/Timeline.tsx`
+
+Accepter une prop `selectedDate` et la passer à `useDiary` :
+
+```typescript
+interface TimelineProps {
+  selectedDate?: Date;
+}
+
+export const Timeline = ({ selectedDate }: TimelineProps) => {
+  const { 
+    currentEntry, 
+    toggleActivity, 
+    // ...
+  } = useDiary(selectedDate);
+  
+  // ... reste inchangé
+};
+```
+
+### 3. `src/pages/Index.tsx`
+
+Passer la date sélectionnée à `Timeline` :
+
+```typescript
+{view === 'timeline' ? (
+  <Timeline selectedDate={selectedDate} />
+) : ...}
+```
+
+---
+
+## Comportement après correction
+
+| Action | Résultat |
+|--------|----------|
+| Clic sur Lundi dans vue Semaine | Timeline affiche les activités de Lundi |
+| Ajout d'une activité | Sauvegardée pour le jour affiché (pas aujourd'hui) |
+| Navigation vers un jour futur | Possibilité d'éditer ce jour à l'avance |
 
 ---
 
 ## Détails techniques
 
-### WeekView.tsx - Nouvelle structure de la grille
-
-```typescript
-// Ordre des colonnes : Matin, Fin de matin, Midi, Après-midi, Fin d'après-midi
-<div className="grid grid-cols-5 divide-x">
-  {/* Matin */}
-  <PeriodColumn period="morning" ... />
-  
-  {/* Fin de matin */}
-  <PeriodColumn period="late-morning" ... />
-  
-  {/* Midi - au milieu maintenant */}
-  <LunchColumn ... />
-  
-  {/* Après-midi */}
-  <PeriodColumn period="afternoon" ... />
-  
-  {/* Fin d'après-midi */}
-  <PeriodColumn period="late-afternoon" ... />
-</div>
-```
-
-### Index.tsx - Gestion du clic
-
-```typescript
-const handleDayClick = (date: Date) => {
-  setSelectedDate(date);
-  setView('timeline');
-};
-
-// Dans le JSX
-<WeekView onDayClick={handleDayClick} />
-```
+Le `dateKey` utilisé pour sauvegarder/charger les données sera automatiquement basé sur la bonne date grâce à cette modification. Toutes les fonctions (`toggleActivity`, `addCustomActivity`, etc.) utiliseront le bon `dateKey` correspondant à la date affichée.
