@@ -1,153 +1,123 @@
 
 
-# Restructure: Checkpoints + Activity Periods
+# Enhance Activity Selection & Editing
 
-## Understanding the Change
+## Overview
 
-**Current (incorrect):**
-Each of the 5 moments is a card where you can add activities.
+Two improvements to the activity picker:
+1. Expand the emoji selection for custom activities
+2. Add the ability to edit existing custom activities
 
-**Desired (correct):**
-- The 5 moments are **checkpoints/markers** on a visual timeline
-- Activities are recorded for the **4 periods between checkpoints**
-- Only **lunch** has a special input for the menu
+---
 
-## New Timeline Structure
+## Changes
 
-```text
-  [Checkpoint]              [Period]                   [Checkpoint]
-  
-  🌅 Début ──────────► 📚 MATIN (activities) ──────────► ☕ Récré AM
-                                                              │
-                                                              ▼
-                      📚 FIN DE MATIN (activities) ◄──────────┘
-                                │
-                                ▼
-                          🍽️ Déjeuner
-                          (menu input)
-                                │
-                                ▼
-                      📚 APRÈS-MIDI (activities) ──────────► 🎈 Récré PM
-                                                                  │
-                                                                  ▼
-                      📚 FIN D'APRÈS-MIDI (activities) ◄──────────┘
-                                │
-                                ▼
-                          🏠 Retour
+### 1. Expanded Emoji Picker
+
+**Current state:** 12 emojis to choose from
+```
+⭐ ❤️ 🌟 ✨ 🎁 🎯 🌈 🦋 🐶 🐱 🎪 🎭
 ```
 
-## Implementation Plan
+**New design:** Organized emoji categories with 50+ options
 
-### 1. Update Data Types (`src/types/diary.ts`)
+| Category | Emojis |
+|----------|--------|
+| School | 📝 📖 📚 ✏️ 🖍️ 📐 🎒 🏫 |
+| Sports | ⚽ 🏀 🎾 🏃 🤸 🚴 🏊 ⛹️ |
+| Arts | 🎨 🎭 🎪 🎵 🎤 🎹 🎸 🎬 |
+| Nature | 🌳 🌸 🌻 🐦 🦋 🐶 🐱 🐰 |
+| Food | 🍎 🍕 🍦 🧁 🍪 🥤 🍩 🍫 |
+| Fun | ⭐ ❤️ 🌈 ✨ 🎁 🎯 🎮 🧩 |
+| People | 👋 🤝 💬 👨‍👩‍👧 👩‍🏫 👫 🙋 💪 |
 
-**Rename concepts:**
-- `TimeSlotId` becomes two types:
-  - `CheckpointId` for the 5 markers (start, morning-break, lunch, afternoon-break, home)
-  - `PeriodId` for the 4 activity periods (morning, late-morning, afternoon, late-afternoon)
+The emoji picker will show categories as tabs or scrollable sections within the custom activity form.
 
-**New period definitions:**
-- `morning` → Between Start and Morning Break (classroom activities)
-- `late-morning` → Between Morning Break and Lunch (classroom activities)  
-- `afternoon` → Between Lunch and Afternoon Break (classroom activities)
-- `late-afternoon` → Between Afternoon Break and Home (classroom activities)
+### 2. Edit Custom Activities
 
-**Update `DayEntry`:**
-- `periods: Record<PeriodId, PeriodEntry>` for activities
-- `lunchMenu?: string` as a separate field
+**Current behavior:** 
+- Click X to delete a custom activity
+- No way to edit
 
-### 2. Create New Timeline Layout (`src/components/diary/Timeline.tsx`)
+**New behavior:**
+- Click on a custom activity to edit it
+- Opens inline edit form with:
+  - Emoji selector (same expanded picker)
+  - Text input pre-filled with current text
+  - Save button
+  - Cancel button
+- X button still available for quick delete
 
-**Visual structure:**
-- Show checkpoints as small circular markers with emojis
-- Show periods as larger tappable cards between checkpoints
-- Use connecting lines to create the timeline feel
-- Lunch checkpoint is special: shows menu input inline or in a simple popover
+---
 
-**Desktop layout (horizontal):**
-```text
-🌅 ─── [Morning Card] ─── ☕ ─── [Late Morning Card] ─── 🍽️ ─── [Afternoon Card] ─── 🎈 ─── [Late Afternoon Card] ─── 🏠
-```
+## Files to Modify
 
-**Tablet layout (can be vertical or horizontal based on space)**
+### `src/components/diary/ActivityPicker.tsx`
 
-### 3. Update Components
+1. **Expand emoji list** - Replace the 12 emojis with categorized groups
+2. **Add EmojiPicker component** (inline or separate) - Shows categories, allows scrolling/browsing
+3. **Add edit mode for custom activities** - When clicking a custom activity, switch to edit mode
+4. **Add state management** - Track which activity is being edited
 
-**TimeSlotCard.tsx → PeriodCard.tsx:**
-- Rename to reflect it represents a period between checkpoints
-- Update to receive period data instead of slot data
-- Show the "between" context (e.g., "Entre le début et la récré")
+### `src/hooks/useDiary.ts`
 
-**ActivityPicker.tsx:**
-- Remove lunch menu handling (moved to inline)
-- Simplify to just handle activity selection for a period
+1. **Add `updateCustomActivity` function** - Update an existing custom activity by ID
 
-**CheckpointMarker.tsx (new):**
-- Simple circular marker with emoji
-- Special handling for lunch: tap to add/edit menu
+### `src/types/diary.ts`
 
-**LunchMenu.tsx (new):**
-- Simple popover or inline input for the lunch menu text
-
-### 4. Update Hook (`src/hooks/useDiary.ts`)
-
-- Change slot-based functions to period-based
-- Add separate `updateLunchMenu` that's not tied to a slot
-- Update storage structure
-
-### 5. Update Summary Components
-
-- `DaySummary.tsx` and `CalendarView.tsx` to work with new period structure
+No changes needed - CustomActivity type already has `id`, `emoji`, `text`
 
 ---
 
 ## Technical Details
 
-### New Type Definitions
+### New function in useDiary hook
 
 ```typescript
-export type CheckpointId = 'start' | 'morning-break' | 'lunch' | 'afternoon-break' | 'home';
-
-export type PeriodId = 'morning' | 'late-morning' | 'afternoon' | 'late-afternoon';
-
-export interface PeriodEntry {
-  activities: string[];
-  customActivities: CustomActivity[];
-}
-
-export interface DayEntry {
-  date: string;
-  periods: Record<PeriodId, PeriodEntry>;
-  lunchMenu?: string;
-}
-
-export const PERIODS: PeriodConfig[] = [
-  { id: 'morning', labelFr: 'Matin', startCheckpoint: 'start', endCheckpoint: 'morning-break', color: 'lavender' },
-  { id: 'late-morning', labelFr: 'Fin de matin', startCheckpoint: 'morning-break', endCheckpoint: 'lunch', color: 'mint' },
-  { id: 'afternoon', labelFr: 'Après-midi', startCheckpoint: 'lunch', endCheckpoint: 'afternoon-break', color: 'sky' },
-  { id: 'late-afternoon', labelFr: 'Fin d\'après-midi', startCheckpoint: 'afternoon-break', endCheckpoint: 'home', color: 'rose' },
-];
-
-export const CHECKPOINTS: CheckpointConfig[] = [
-  { id: 'start', emoji: '🌅', labelFr: 'Début' },
-  { id: 'morning-break', emoji: '☕', labelFr: 'Récré' },
-  { id: 'lunch', emoji: '🍽️', labelFr: 'Déjeuner' },
-  { id: 'afternoon-break', emoji: '🎈', labelFr: 'Récré' },
-  { id: 'home', emoji: '🏠', labelFr: 'Retour' },
-];
+const updateCustomActivity = useCallback((
+  periodId: PeriodId, 
+  customActivityId: string, 
+  emoji: string, 
+  text: string
+) => {
+  const period = currentEntry.periods[periodId];
+  updatePeriod(periodId, {
+    ...period,
+    customActivities: period.customActivities.map(ca =>
+      ca.id === customActivityId 
+        ? { ...ca, emoji, text } 
+        : ca
+    ),
+  });
+}, [currentEntry, updatePeriod]);
 ```
 
-### Files to Modify
+### UI Flow for Editing
 
-1. `src/types/diary.ts` - New type structure
-2. `src/hooks/useDiary.ts` - Update to period-based logic
-3. `src/components/diary/Timeline.tsx` - New layout with checkpoints + periods
-4. `src/components/diary/TimeSlotCard.tsx` → Rename to `PeriodCard.tsx`
-5. `src/components/diary/ActivityPicker.tsx` - Simplify (remove lunch handling)
-6. `src/components/diary/DaySummary.tsx` - Update for new structure
-7. `src/components/diary/CalendarView.tsx` - Update if needed
+1. User sees custom activity pill: `[⭐ Mon activité] [X]`
+2. User clicks on the pill (not the X)
+3. Pill transforms into edit form inline:
+   - Emoji selector appears
+   - Text input with current value
+   - Save/Cancel buttons
+4. User makes changes and clicks Save
+5. Form closes, updated activity shown
 
-### New Components
+### Emoji Categories Data Structure
 
-1. `src/components/diary/CheckpointMarker.tsx` - Small emoji markers
-2. `src/components/diary/LunchInput.tsx` - Menu text input popover
+```typescript
+const EMOJI_CATEGORIES = [
+  { 
+    id: 'school', 
+    label: 'École', 
+    emojis: ['📝', '📖', '📚', '✏️', '🖍️', '📐', '🎒', '🏫'] 
+  },
+  { 
+    id: 'sports', 
+    label: 'Sports', 
+    emojis: ['⚽', '🏀', '🎾', '🏃', '🤸', '🚴', '🏊', '⛹️'] 
+  },
+  // ... more categories
+];
+```
 
