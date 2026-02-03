@@ -1,106 +1,92 @@
 
-# Vue Semaine & Vérification de la Sauvegarde
+# Améliorations de la Vue Semaine
 
-## Analyse
+## Changements demandés
 
-### Sauvegarde des données
-L'app utilise déjà localStorage pour sauvegarder les données (dans `useDiary.ts`). Chaque modification est automatiquement sauvegardée. Si tu perds les données, c'est peut-être lié à :
-- Navigation privée (les données ne persistent pas)
-- Nettoyage du navigateur
-
-Je vais vérifier le bon fonctionnement de la sauvegarde.
-
-### Vue semaine
-Tu veux voir toute la semaine d'un coup pour comparer les jours - super idée pour un journal d'école !
+1. **Réorganiser les colonnes** : Matin → Fin de matin → Midi → Après-midi → Fin d'après-midi
+2. **Rendre les jours cliquables** : Cliquer sur un jour ouvre la vue timeline avec ce jour sélectionné
 
 ---
 
-## Nouvelle vue : Ma Semaine
+## Modifications à apporter
+
+### Fichier `src/components/diary/WeekView.tsx`
+
+**1. Réorganiser la grille des colonnes**
+
+Actuellement les périodes sont affichées dans l'ordre, puis Midi à la fin :
+```text
+Matin | Fin de matin | Après-midi | Fin d'après-midi | Midi
+```
+
+Nouveau layout avec Midi au milieu :
+```text
+Matin | Fin de matin | Midi | Après-midi | Fin d'après-midi
+```
+
+**2. Ajouter le callback de sélection**
+
+- Accepter une prop `onDayClick: (date: Date) => void`
+- Ajouter un style `cursor-pointer` et effet `hover` sur chaque jour
+- Appeler `onDayClick` avec la date du jour cliqué
+
+### Fichier `src/pages/Index.tsx`
+
+**3. Gérer la navigation depuis WeekView**
+
+Quand un jour est cliqué dans WeekView :
+- Mettre à jour `selectedDate` avec la date cliquée
+- Changer la vue vers `timeline`
+
+---
+
+## Aperçu du résultat
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  📚 Ma Journée d'École                                          │
-│  Semaine du 3 février 2025                                      │
-│                                                                 │
-│  [Aujourd'hui] [Semaine] [Calendrier]    ← Nouveau bouton       │
-└─────────────────────────────────────────────────────────────────┘
-
 ┌──────────────────────────────────────────────────────────────────┐
-│ LUNDI 3 FÉVRIER                                                  │
+│ LUNDI 3 FÉVRIER                                      → Cliquable │
 ├──────────┬──────────┬──────────┬──────────┬──────────────────────┤
 │  Matin   │ Fin mat. │   Midi   │  Après   │  Fin d'après-midi    │
 │ 📝 Écrit │ 📖 Lect. │ 🍕 Pizza │ 🎨 Dessin│  📚 Histoire         │
-│ 🔢 Maths │          │          │          │                      │
 └──────────┴──────────┴──────────┴──────────┴──────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────┐
-│ MARDI 4 FÉVRIER                                                  │
-├──────────┬──────────┬──────────┬──────────┬──────────────────────┤
-│  Matin   │ Fin mat. │   Midi   │  Après   │  Fin d'après-midi    │
-│ 📖 Lect. │ 🎵 Musiq │ 🥗 Salade│ 🤸 Gym   │  🧩 Puzzles          │
-└──────────┴──────────┴──────────┴──────────┴──────────────────────┘
-
-... (Mercredi, Jeudi, Vendredi)
 ```
 
----
-
-## Fichiers à modifier/créer
-
-### 1. Nouveau composant `WeekView.tsx`
-Affiche les 5 jours de la semaine (Lundi → Vendredi) avec :
-- En-tête avec le jour et la date
-- 4 colonnes pour les périodes + 1 pour le déjeuner
-- Activités affichées avec emoji + texte
-- Jours empilés verticalement pour comparaison facile
-
-### 2. Modifier `Header.tsx`
-Ajouter un 3ème bouton "Semaine" entre "Aujourd'hui" et "Calendrier"
-
-### 3. Modifier `Index.tsx`
-Gérer la nouvelle vue "week" en plus de "timeline" et "calendar"
-
-### 4. Modifier `useDiary.ts`
-Ajouter une fonction `getWeekEntries()` pour récupérer tous les jours de la semaine courante
+Au clic sur ce bloc → Vue "Aujourd'hui" avec Lundi 3 Février sélectionné
 
 ---
 
 ## Détails techniques
 
-### Calcul de la semaine
-Utiliser `date-fns` pour :
-- `startOfWeek(date, { weekStartsOn: 1 })` → Obtenir le lundi
-- `eachDayOfInterval` → Générer les 5 jours (Lun-Ven)
-
-### Structure du composant WeekView
+### WeekView.tsx - Nouvelle structure de la grille
 
 ```typescript
-const WeekView = () => {
-  const { getEntry } = useDiary();
-  const weekDays = getWeekDays(new Date()); // [Lundi, Mardi, ...]
+// Ordre des colonnes : Matin, Fin de matin, Midi, Après-midi, Fin d'après-midi
+<div className="grid grid-cols-5 divide-x">
+  {/* Matin */}
+  <PeriodColumn period="morning" ... />
   
-  return (
-    <div className="space-y-4">
-      {weekDays.map(day => (
-        <DayRow key={day} date={day} entry={getEntry(day)} />
-      ))}
-    </div>
-  );
-};
+  {/* Fin de matin */}
+  <PeriodColumn period="late-morning" ... />
+  
+  {/* Midi - au milieu maintenant */}
+  <LunchColumn ... />
+  
+  {/* Après-midi */}
+  <PeriodColumn period="afternoon" ... />
+  
+  {/* Fin d'après-midi */}
+  <PeriodColumn period="late-afternoon" ... />
+</div>
 ```
 
-### DayRow - Une ligne par jour
+### Index.tsx - Gestion du clic
 
 ```typescript
-const DayRow = ({ date, entry }) => (
-  <div className="bg-card rounded-xl p-4">
-    <h3>LUNDI 3 FÉVRIER</h3>
-    <div className="grid grid-cols-5 gap-2">
-      {PERIODS.map(period => (
-        <PeriodColumn period={period} entry={entry?.periods[period.id]} />
-      ))}
-      <LunchColumn menu={entry?.lunchMenu} />
-    </div>
-  </div>
-);
+const handleDayClick = (date: Date) => {
+  setSelectedDate(date);
+  setView('timeline');
+};
+
+// Dans le JSX
+<WeekView onDayClick={handleDayClick} />
 ```
