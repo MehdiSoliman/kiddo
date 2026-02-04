@@ -1,81 +1,101 @@
 
-# Correction : Afficher les données du jour sélectionné
+# Amélioration UX des PeriodCards
 
-## Problème identifié
+## Problèmes identifiés
 
-Le composant `Timeline` appelle `useDiary()` de manière indépendante, créant son propre état `selectedDate` initialisé à aujourd'hui. Quand tu cliques sur un autre jour dans la vue Semaine :
+1. **Limite de 3 activités** : Le code actuel n'affiche que 3 activités puis "+X autre(s)" pour le reste
+2. **Alignement centré verticalement** : `justify-center` centre le contenu, ce qui désaligne les cartes entre elles
 
-1. `Index.tsx` met à jour sa propre `selectedDate`
-2. `Timeline` ignore cette date et utilise toujours sa propre date (aujourd'hui)
-3. Résultat : tu vois toujours les activités d'aujourd'hui
+## Modifications à apporter
 
-## Solution
+### Fichier `src/components/diary/PeriodCard.tsx`
 
-Passer la `selectedDate` en prop à `Timeline` et modifier `useDiary` pour qu'il accepte une date externe.
+**1. Afficher toutes les activités (supprimer la limite)**
 
----
+Changements :
+- Supprimer les variables `displayCount`, `visibleActivities`, et `remainingCount`
+- Afficher directement `allActivities` (toutes les activités)
+- Supprimer le bloc qui affiche "+X autre(s)"
 
-## Fichiers à modifier
+**2. Aligner les cartes par le haut**
 
-### 1. `src/hooks/useDiary.ts`
-
-Modifier le hook pour accepter une date optionnelle en paramètre :
-
-```typescript
-export const useDiary = (externalDate?: Date) => {
-  const [entries, setEntries] = useState<Record<string, DayEntry>>({});
-  const [internalDate, setInternalDate] = useState<Date>(new Date());
-  
-  // Utiliser la date externe si fournie, sinon la date interne
-  const selectedDate = externalDate ?? internalDate;
-  const setSelectedDate = setInternalDate;
-  
-  // ... reste du code inchangé
-}
-```
-
-### 2. `src/components/diary/Timeline.tsx`
-
-Accepter une prop `selectedDate` et la passer à `useDiary` :
-
-```typescript
-interface TimelineProps {
-  selectedDate?: Date;
-}
-
-export const Timeline = ({ selectedDate }: TimelineProps) => {
-  const { 
-    currentEntry, 
-    toggleActivity, 
-    // ...
-  } = useDiary(selectedDate);
-  
-  // ... reste inchangé
-};
-```
-
-### 3. `src/pages/Index.tsx`
-
-Passer la date sélectionnée à `Timeline` :
-
-```typescript
-{view === 'timeline' ? (
-  <Timeline selectedDate={selectedDate} />
-) : ...}
-```
+Changements :
+- Remplacer `justify-center` par `justify-start` dans le conteneur de contenu
+- Garder le `min-h-[100px]` pour maintenir une hauteur minimale
+- Les cartes seront ainsi alignées par le haut, et seul le bas grandira avec le contenu
 
 ---
 
-## Comportement après correction
+## Avant / Après
 
-| Action | Résultat |
-|--------|----------|
-| Clic sur Lundi dans vue Semaine | Timeline affiche les activités de Lundi |
-| Ajout d'une activité | Sauvegardée pour le jour affiché (pas aujourd'hui) |
-| Navigation vers un jour futur | Possibilité d'éditer ce jour à l'avance |
+**Avant :**
+```text
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│  Matin  │  │Fin mat. │  │  Après  │
+│         │  │         │  │ 📖 Lect │
+│ 📝 Écrit│  │ 📖 Lect │  │ 🎨 Dessin│
+│ 🔢 Maths│  │         │  │ 🧩 Puzzle│
+│ +2 autres│ │         │  │         │
+└─────────┘  └─────────┘  └─────────┘
+   ↑ centré    ↑ centré    ↑ centré
+```
+
+**Après :**
+```text
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│  Matin  │  │Fin mat. │  │  Après  │
+│ 📝 Écrit│  │ 📖 Lect │  │ 📖 Lect │
+│ 🔢 Maths│  │         │  │ 🎨 Dessin│
+│ 🎵 Musiq│  │         │  │ 🧩 Puzzle│
+│ 📖 Lect │  │         │  │ 🎵 Musiq│
+│ 🎨 Dessin│ │         │  │         │
+└─────────┘  └─────────┘  └─────────┘
+   ↑ toutes    ↑ aligné    ↑ toutes
+     visibles    en haut     visibles
+```
 
 ---
 
 ## Détails techniques
 
-Le `dateKey` utilisé pour sauvegarder/charger les données sera automatiquement basé sur la bonne date grâce à cette modification. Toutes les fonctions (`toggleActivity`, `addCustomActivity`, etc.) utiliseront le bon `dateKey` correspondant à la date affichée.
+### Code modifié dans PeriodCard.tsx
+
+```typescript
+// Avant
+const displayCount = 3;
+const visibleActivities = allActivities.slice(0, displayCount);
+const remainingCount = allActivities.length - displayCount;
+
+// Après : supprimé - on utilise directement allActivities
+```
+
+```typescript
+// Avant
+<div className="flex-1 flex flex-col justify-center">
+
+// Après
+<div className="flex-1 flex flex-col justify-start">
+```
+
+```typescript
+// Supprimer ce bloc
+{remainingCount > 0 && (
+  <p className="text-xs text-muted-foreground font-medium pl-6">
+    +{remainingCount} autre{remainingCount > 1 ? 's' : ''}
+  </p>
+)}
+```
+
+### Alignement dans Timeline.tsx (desktop)
+
+Le layout horizontal desktop utilise `items-center`. Pour aligner les cartes par le haut, il faudra aussi modifier la ligne 36 :
+
+```typescript
+// Avant
+<div className="hidden md:flex items-center justify-between gap-2">
+
+// Après
+<div className="hidden md:flex items-start justify-between gap-2">
+```
+
+Cela garantit que les cartes s'alignent par le haut dans la vue desktop.
