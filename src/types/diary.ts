@@ -1,18 +1,29 @@
-// Checkpoint markers on the timeline (visual anchors)
-export type CheckpointId = 
-  | 'start' 
-  | 'morning-break' 
-  | 'lunch' 
-  | 'afternoon-break' 
+/**
+ * Types et constantes du journal scolaire.
+ *
+ * Structure d'une journée :
+ *   5 checkpoints (repères visuels sur la timeline)
+ *   4 périodes entre ces checkpoints (là où on enregistre les activités)
+ *
+ *   🌅 Début ─ [Matin] ─ ☕ Récré ─ [Fin de matin] ─ 🍽️ Déjeuner ─ [Après-midi] ─ 🎈 Récré ─ [Fin d'après-midi] ─ 🏠 Retour
+ */
+
+/** Les 5 repères visuels de la timeline */
+export type CheckpointId =
+  | 'start'
+  | 'morning-break'
+  | 'lunch'
+  | 'afternoon-break'
   | 'home';
 
-// Periods between checkpoints (where activities happen)
-export type PeriodId = 
-  | 'morning' 
-  | 'late-morning' 
-  | 'afternoon' 
+/** Les 4 créneaux horaires entre les checkpoints */
+export type PeriodId =
+  | 'morning'
+  | 'late-morning'
+  | 'afternoon'
   | 'late-afternoon';
 
+/** Activité prédéfinie (une des 16 disponibles) */
 export interface Activity {
   id: string;
   emoji: string;
@@ -20,29 +31,34 @@ export interface Activity {
   labelFr: string;
 }
 
+/** Activité personnalisée créée par l'utilisateur */
 export interface CustomActivity {
-  id: string;
+  id: string;       // Généré via `custom-${Date.now()}`
   emoji: string;
   text: string;
 }
 
+/** Contenu d'une période : activités prédéfinies + personnalisées */
 export interface PeriodEntry {
-  activities: string[]; // Activity IDs
+  activities: string[];           // IDs des activités prédéfinies sélectionnées
   customActivities: CustomActivity[];
 }
 
+/** Entrée complète d'une journée */
 export interface DayEntry {
-  date: string; // ISO date string YYYY-MM-DD
+  date: string;                          // Format YYYY-MM-DD
   periods: Record<PeriodId, PeriodEntry>;
-  lunchMenu?: string;
+  lunchMenu?: string;                    // Menu du déjeuner (texte libre)
 }
 
+/** Configuration d'affichage d'un checkpoint */
 export interface CheckpointConfig {
   id: CheckpointId;
   emoji: string;
   labelFr: string;
 }
 
+/** Configuration d'affichage d'une période */
 export interface PeriodConfig {
   id: PeriodId;
   labelFr: string;

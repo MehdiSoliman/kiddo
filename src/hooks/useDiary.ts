@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { 
-  DayEntry, 
-  PeriodId, 
-  PeriodEntry, 
+import {
+  DayEntry,
+  PeriodId,
+  PeriodEntry,
   CustomActivity,
-  createEmptyDayEntry 
+  createEmptyDayEntry
 } from '@/types/diary';
+import { fetchAllEntries, saveEntry } from '@/lib/api';
 
 const STORAGE_KEY = 'ma-journee-diary';
 
@@ -28,14 +29,24 @@ const saveAllEntries = (entries: Record<string, DayEntry>) => {
 export const useDiary = (externalDate?: Date) => {
   const [entries, setEntries] = useState<Record<string, DayEntry>>({});
   const [internalDate, setInternalDate] = useState<Date>(new Date());
-  
+
   // Use external date if provided, otherwise use internal state
   const selectedDate = externalDate ?? internalDate;
   const setSelectedDate = setInternalDate;
 
-  // Load entries on mount
+  // Load entries on mount: API first, localStorage fallback
   useEffect(() => {
-    setEntries(loadAllEntries());
+    const localData = loadAllEntries();
+    setEntries(localData);
+
+    fetchAllEntries().then(remoteData => {
+      if (remoteData) {
+        // Merge: remote wins, but keep local-only entries
+        const merged = { ...localData, ...remoteData };
+        setEntries(merged);
+        saveAllEntries(merged);
+      }
+    });
   }, []);
 
   // Get formatted date key
@@ -44,24 +55,28 @@ export const useDiary = (externalDate?: Date) => {
   // Get current day's entry (or create empty one)
   const currentEntry: DayEntry = entries[dateKey] || createEmptyDayEntry(dateKey);
 
+  // Save a single day entry to localStorage + API
+  const persistEntry = useCallback((date: string, entry: DayEntry) => {
+    saveEntry(date, entry);
+  }, []);
+
   // Update a specific period
   const updatePeriod = useCallback((periodId: PeriodId, periodEntry: PeriodEntry) => {
     setEntries(prev => {
       const existingEntry = prev[dateKey] || createEmptyDayEntry(dateKey);
-      const newEntries = {
-        ...prev,
-        [dateKey]: {
-          ...existingEntry,
-          periods: {
-            ...existingEntry.periods,
-            [periodId]: periodEntry,
-          },
+      const updatedEntry = {
+        ...existingEntry,
+        periods: {
+          ...existingEntry.periods,
+          [periodId]: periodEntry,
         },
       };
+      const newEntries = { ...prev, [dateKey]: updatedEntry };
       saveAllEntries(newEntries);
+      persistEntry(dateKey, updatedEntry);
       return newEntries;
     });
-  }, [dateKey]);
+  }, [dateKey, persistEntry]);
 
   // Toggle an activity for a period
   const toggleActivity = useCallback((periodId: PeriodId, activityId: string) => {
@@ -69,7 +84,7 @@ export const useDiary = (externalDate?: Date) => {
     const newActivities = period.activities.includes(activityId)
       ? period.activities.filter(id => id !== activityId)
       : [...period.activities, activityId];
-    
+
     updatePeriod(periodId, { ...period, activities: newActivities });
   }, [currentEntry, updatePeriod]);
 
@@ -81,7 +96,7 @@ export const useDiary = (externalDate?: Date) => {
       emoji,
       text,
     };
-    
+
     updatePeriod(periodId, {
       ...period,
       customActivities: [...period.customActivities, newCustomActivity],
@@ -90,17 +105,17 @@ export const useDiary = (externalDate?: Date) => {
 
   // Update an existing custom activity
   const updateCustomActivity = useCallback((
-    periodId: PeriodId, 
-    customActivityId: string, 
-    emoji: string, 
+    periodId: PeriodId,
+    customActivityId: string,
+    emoji: string,
     text: string
   ) => {
     const period = currentEntry.periods[periodId];
     updatePeriod(periodId, {
       ...period,
       customActivities: period.customActivities.map(ca =>
-        ca.id === customActivityId 
-          ? { ...ca, emoji, text } 
+        ca.id === customActivityId
+          ? { ...ca, emoji, text }
           : ca
       ),
     });
@@ -119,31 +134,30 @@ export const useDiary = (externalDate?: Date) => {
   const updateLunchMenu = useCallback((menu: string) => {
     setEntries(prev => {
       const existingEntry = prev[dateKey] || createEmptyDayEntry(dateKey);
-      const newEntries = {
-        ...prev,
-        [dateKey]: {
-          ...existingEntry,
-          lunchMenu: menu,
-        },
+      const updatedEntry = {
+        ...existingEntry,
+        lunchMenu: menu,
       };
+      const newEntries = { ...prev, [dateKey]: updatedEntry };
       saveAllEntries(newEntries);
+      persistEntry(dateKey, updatedEntry);
       return newEntries;
     });
-  }, [dateKey]);
+  }, [dateKey, persistEntry]);
 
   // Check if a date has any entries
   const hasEntries = useCallback((date: Date): boolean => {
     const key = format(date, 'yyyy-MM-dd');
     const entry = entries[key];
     if (!entry) return false;
-    
-    const hasPeriodsContent = Object.values(entry.periods).some(period => 
-      period.activities.length > 0 || 
+
+    const hasPeriodsContent = Object.values(entry.periods).some(period =>
+      period.activities.length > 0 ||
       period.customActivities.length > 0
     );
-    
+
     const hasLunch = entry.lunchMenu && entry.lunchMenu.trim() !== '';
-    
+
     return hasPeriodsContent || hasLunch;
   }, [entries]);
 

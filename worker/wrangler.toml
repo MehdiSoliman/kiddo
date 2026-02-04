@@ -1,0 +1,7 @@
+name = "kiddo-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[kv_namespaces]]
+binding = "DIARY_KV"
+id = "4dbf765445b647599dfe86c7e8b01a02"
