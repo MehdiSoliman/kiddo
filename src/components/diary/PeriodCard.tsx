@@ -38,9 +38,6 @@ export const PeriodCard = ({ config, entry, onClick }: PeriodCardProps) => {
   }));
 
   const allActivities = [...predefinedActivities, ...customActivitiesDisplay];
-  const displayCount = 3;
-  const visibleActivities = allActivities.slice(0, displayCount);
-  const remainingCount = allActivities.length - displayCount;
 
   return (
     <button
@@ -59,10 +56,10 @@ export const PeriodCard = ({ config, entry, onClick }: PeriodCardProps) => {
       </h3>
 
       {/* Content preview or add prompt */}
-      <div className="flex-1 flex flex-col justify-center">
+      <div className="flex-1 flex flex-col justify-start">
         {hasContent ? (
           <div className="space-y-1">
-            {visibleActivities.map((activity, idx) => (
+            {allActivities.map((activity, idx) => (
               <div 
                 key={idx} 
                 className="flex items-center gap-1.5 text-left"
@@ -73,11 +70,6 @@ export const PeriodCard = ({ config, entry, onClick }: PeriodCardProps) => {
                 </span>
               </div>
             ))}
-            {remainingCount > 0 && (
-              <p className="text-xs text-muted-foreground font-medium pl-6">
-                +{remainingCount} autre{remainingCount > 1 ? 's' : ''}
-              </p>
-            )}
           </div>
         ) : (
           <div className="flex items-center justify-center gap-1 text-muted-foreground">
