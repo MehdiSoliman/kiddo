@@ -33,7 +33,7 @@ export const Timeline = ({ selectedDate }: TimelineProps) => {
   return (
     <div className="w-full">
       {/* Desktop/Tablet horizontal timeline */}
-      <div className="hidden md:flex items-center justify-between gap-2">
+      <div className="hidden md:flex items-start justify-between gap-2">
         {/* Start checkpoint */}
         <CheckpointMarker config={getCheckpoint('start')} />
         
