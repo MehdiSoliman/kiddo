@@ -1,73 +1,52 @@
-# Welcome to your Lovable project
+# Kiddo — Ma Journée d'École
 
-## Project info
+Journal scolaire quotidien pour enfants. L'enfant sélectionne les activités faites pendant chaque période de sa journée d'école.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Fonctionnalités
 
-## How can I edit this code?
+- 4 périodes de la journée : matin, fin de matin, après-midi, fin d'après-midi
+- 16 activités prédéfinies + activités personnalisées avec emoji
+- Menu du déjeuner
+- 3 vues : timeline, semaine, calendrier
+- Sauvegarde locale (localStorage) + backup distant optionnel (Cloudflare KV)
 
-There are several ways of editing your application.
+## Stack technique
 
-**Use Lovable**
+- React + TypeScript
+- Vite
+- Tailwind CSS + shadcn/ui
+- Cloudflare Workers + KV (backup distant)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Démarrage rapide
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+L'app tourne sur `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backup distant (optionnel)
 
-**Use GitHub Codespaces**
+Pour activer la synchronisation avec Cloudflare KV :
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Copier `.env.example` vers `.env.local`
+2. Renseigner `VITE_API_URL` et `VITE_API_TOKEN`
+3. Déployer le worker :
 
-## What technologies are used for this project?
+```bash
+cd worker
+npm install
+npm run deploy
+```
 
-This project is built with:
+Sans ces variables d'environnement, l'app fonctionne en mode localStorage uniquement.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Scripts
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+npm run dev          # Serveur de dev (port 8080)
+npm run build        # Build de production
+npm run test         # Tests (Vitest)
+npm run lint         # ESLint
+```
